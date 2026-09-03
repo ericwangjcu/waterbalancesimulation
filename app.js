@@ -29,15 +29,24 @@
     const rand=mulberry32(seed);
     weather=[];
     for(let i=0;i<N;i++){
+      // Rain events occur in clusters, roughly suitable for a visual demonstration.
       const wave = 0.18 + 0.14*Math.sin((i+4)/5);
       const event = rand() < clamp(wave,0.08,0.38);
       const actual = event ? Math.max(0, 5 + rand()*34 + gaussian(rand)*5) : (rand()<0.11 ? rand()*5 : 0);
+
+      // Forecast is correlated with realised rain, but deliberately imperfect.
       const forecastAmount = Math.max(0, actual*(0.65+rand()*0.7) + gaussian(rand)*5);
       let prob = actual>5 ? 55+rand()*40 : 15+rand()*50;
-      if(rand()<0.11) prob = 65+rand()*28;
-      if(actual>15 && rand()<0.12) prob = 30+rand()*30;
+      if(rand()<0.11) prob = 65+rand()*28;   // false alarm
+      if(actual>15 && rand()<0.12) prob = 30+rand()*30; // missed event
+
       const etc = clamp(5.2 + 1.1*Math.sin(i/6) + gaussian(rand)*0.7, 3.4, 7.5);
-      weather.push({day:i,actual:+actual.toFixed(1),fc:+forecastAmount.toFixed(1),prob:Math.round(clamp(prob,5,95)),etc:+etc.toFixed(1)});
+      weather.push({
+        day:i, actual:+actual.toFixed(1),
+        fc:+forecastAmount.toFixed(1),
+        prob:Math.round(clamp(prob,5,95)),
+        etc:+etc.toFixed(1)
+      });
     }
   }
 
@@ -72,13 +81,16 @@
 
     for(let i=0;i<N;i++){
       const w=weather[i];
+      // Daily crop demand increases deficit.
       swd += w.etc;
+
       let applied=0, decision="", sig=forecastSignal(i,p);
       const needs = swd >= p.trigger;
 
       if(needs){
         if(mode==="baseline"){
           if(allocationLeft>0){
+            // modest variation in event amount mimics field operation variability
             const variation = ((i*17 + seed%23)%7)-3;
             applied=Math.max(10,Math.min(p.irr+variation, allocationLeft));
             decision="Irrigate";
@@ -107,13 +119,18 @@
         irrEvents.push({day:i,amount:+applied.toFixed(1),reason:decision});
       }
 
+      // Rain fills the soil profile. Rain falling onto an already-wet profile is less effective.
       const room=Math.max(0,swd);
       const eff=Math.min(w.actual,room);
       effectiveRain+=eff;
       swd-=eff;
       const excess=Math.max(0,w.actual-room);
       drainage+=excess;
+
+      // cap wet end at 0 deficit; drainage already counted
       swd=Math.max(0,swd);
+
+      // Water stress proxy once deficit exceeds 75 mm.
       if(swd>75) stress += (swd-75)/25;
 
       arr.push({day:i,swd:+swd.toFixed(1),applied:+applied.toFixed(1),decision,sig});
@@ -122,6 +139,7 @@
       }
     }
 
+    // Simple yield proxy for communication only.
     const basePotential=110;
     const yieldTCH=Math.max(70,basePotential-stress*1.55);
     return {
@@ -162,21 +180,47 @@
     svg.appendChild(el("text",{x:12,y:16,class:"axistext"},"mm"));
     svg.appendChild(el("text",{x:W-13,y:16,"text-anchor":"end",class:"axistext"},"rain probability"));
 
+    // Forecast bars, realised rain bars. Forecast bars get a green outline when both thresholds are met.
     const barW=Math.max(3,plotW/N*0.48);
     weather.forEach((d,i)=>{
-      svg.appendChild(el("rect",{x:x(i)-barW*.65,y:y(d.fc),width:barW*.6,height:Math.max(0,y(0)-y(d.fc)),rx:2,fill:"#a8cde7",opacity:.7}));
+      const qualifies=d.fc>=p.rain && d.prob>=p.prob;
+      svg.appendChild(el("rect",{
+        x:x(i)-barW*.65,y:y(d.fc),width:barW*.6,height:Math.max(0,y(0)-y(d.fc)),rx:2,
+        fill:"#a8cde7",opacity:.7,stroke:qualifies?"#2f8f63":"none","stroke-width":qualifies?2:0
+      }));
       svg.appendChild(el("rect",{x:x(i),y:y(d.actual),width:barW*.6,height:Math.max(0,y(0)-y(d.actual)),rx:2,fill:"#3e83b7",opacity:.9}));
     });
 
-    svg.appendChild(el("path",{d:linePath(weather.map(d=>d.prob),x,yProb),fill:"none",stroke:"#245f8c","stroke-width":2.2,"stroke-dasharray":"5 4"}));
+    // Rainfall probability, explicitly shown on the right-hand 0–100% axis.
+    svg.appendChild(el("path",{
+      d:linePath(weather.map(d=>d.prob),x,yProb),
+      fill:"none",stroke:"#245f8c","stroke-width":2.2,"stroke-dasharray":"5 4"
+    }));
     weather.forEach((d,i)=>{
       svg.appendChild(el("circle",{cx:x(i),cy:yProb(d.prob),r:2.5,fill:"#245f8c"}));
     });
 
+    // User-selected probability threshold.
     const thresholdY=yProb(p.prob);
-    svg.appendChild(el("line",{x1:L,y1:thresholdY,x2:W-R,y2:thresholdY,stroke:"#245f8c","stroke-width":1,"stroke-dasharray":"2 5",opacity:.5}));
-    svg.appendChild(el("text",{x:W-R-5,y:thresholdY-5,"text-anchor":"end",class:"axistext"},"threshold "+p.prob+"%"));
+    svg.appendChild(el("line",{
+      x1:L,y1:thresholdY,x2:W-R,y2:thresholdY,
+      stroke:"#245f8c","stroke-width":1,"stroke-dasharray":"2 5",opacity:.5
+    }));
+    svg.appendChild(el("text",{
+      x:W-R-5,y:thresholdY-5,"text-anchor":"end",class:"axistext"
+    },"probability threshold "+p.prob+"%"));
 
+    // User-selected rainfall amount threshold on the left mm axis.
+    const rainThresholdY=y(p.rain);
+    svg.appendChild(el("line",{
+      x1:L,y1:rainThresholdY,x2:W-R,y2:rainThresholdY,
+      stroke:"#2f8f63","stroke-width":1,"stroke-dasharray":"4 5",opacity:.55
+    }));
+    svg.appendChild(el("text",{
+      x:L+5,y:rainThresholdY-5,"text-anchor":"start",class:"axistext"
+    },"rain threshold "+p.rain+" mm"));
+
+    // baseline irrigation above axis as orange marker
     base.irrEvents.forEach(e=>{
       svg.appendChild(el("line",{x1:x(e.day),y1:y(e.amount),x2:x(e.day),y2:y(0),stroke:"#c1a17d","stroke-width":2,opacity:.55}));
     });
@@ -190,6 +234,7 @@
       svg.appendChild(el("text",{x:x(i),y:H-18,"text-anchor":"middle",class:"axistext"},dateLabel(i)));
     }
 
+    // legend
     const legends=[
       ["#a8cde7","Forecast rain","bar"],
       ["#3e83b7","Realised rain","bar"],
@@ -213,7 +258,7 @@
     const W=1100,H=300,L=48,R=18,T=20,B=42,plotW=W-L-R,plotH=H-T-B;
     const maxV=Math.max(100,p.cap+15,...base.arr.map(x=>x.swd),...smart.arr.map(x=>x.swd));
     const x=i=>L+i*plotW/(N-1);
-    const y=v=>T+(v/maxV)*plotH;
+    const y=v=>T+(v/maxV)*plotH; // deficit increases downward visually
 
     for(let g=0;g<=5;g++){
       const val=maxV*g/5, yy=y(val);
@@ -259,6 +304,7 @@
       const best=s.sig;
       let outcome="";
       if(s.decision.startsWith("Delay")){
+        const future=best ? `Day +${best.ahead}: ${best.fc.toFixed(0)} mm @ ${best.prob}%` : "";
         const actualNext=best ? weather[day+best.ahead]?.actual||0 : 0;
         outcome = actualNext>=5
           ? `<span class="tag d">Rain captured</span> ${actualNext.toFixed(1)} mm realised`
@@ -304,6 +350,16 @@
     }
   }
 
+  function updateThresholdSummary(smart,p){
+    const qualifying=weather.filter(d=>d.fc>=p.rain && d.prob>=p.prob).length;
+    const delays=smart.arr.filter(d=>d.decision.startsWith("Delay")).length;
+    const qualifiedText=`${qualifying} of ${N} forecast days meet ≥${p.rain} mm and ≥${p.prob}%`;
+    $("signalCount").textContent=qualifiedText;
+    $("decisionSensitivity").textContent=delays===1
+      ? "1 qualifying forecast changes an irrigation decision in this run."
+      : `${delays} qualifying forecasts change irrigation decisions in this run.`;
+  }
+
   function syncLabels(){
     [["trigger","triggerV"],["irrAmount","irrV"],["rainThreshold","rainV"],
      ["probThreshold","probV"],["lookahead","lookV"],["safetyCap","capV"]]
@@ -316,6 +372,7 @@
     const base=simulate("baseline",p);
     const smart=simulate("smart",p);
     updateKpis(base,smart,p);
+    updateThresholdSummary(smart,p);
     drawWeather(base,smart,p);
     drawSWD(base,smart,p);
     buildDecisionTable(base,smart,p);
@@ -324,7 +381,6 @@
   ["trigger","irrAmount","rainThreshold","probThreshold","lookahead","safetyCap","allocation"]
     .forEach(id=>$(id).addEventListener("input",()=>{syncLabels();run()}));
 
-  $("runBtn").addEventListener("click",run);
   $("randomBtn").addEventListener("click",()=>{
     seed=Math.floor(Math.random()*1e9);
     generateWeather();run();
