@@ -63,9 +63,14 @@
         <input id="safetyCap" type="range" min="65" max="100" step="5" value="80">
       </div>
 
-      <div class="btnrow">
-        <button class="primary" id="runBtn">Run simulation</button>
+      <div class="btnrow single">
         <button class="secondary" id="randomBtn">New random weather</button>
+      </div>
+
+      <div class="signal-box" id="signalSummary">
+        <div class="signal-title">Threshold response</div>
+        <div><strong id="signalCount">–</strong></div>
+        <div class="signal-detail" id="decisionSensitivity">–</div>
       </div>
 
       <div class="legend-row">
@@ -75,7 +80,7 @@
       </div>
 
       <div class="tiny-note">
-        <b>Decision rule:</b> when SWD reaches the trigger, irrigation can be delayed if forecast rainfall meets both the selected rainfall amount and probability thresholds within the look-ahead period. Irrigation is forced at the safety SWD cap.
+        <b>Decision rule:</b> when SWD reaches the trigger, irrigation can be delayed if forecast rainfall meets both the selected rainfall amount and probability thresholds within the look-ahead period. Irrigation is forced at the safety SWD cap. A threshold change only alters the irrigation schedule when it changes the forecast signal during an irrigation decision window.
       </div>
     </aside>
 
