@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CLOVER – Forecast-informed irrigation demo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="brand">
+      <div class="mark" aria-hidden="true">
+        <span class="leaf a"></span><span class="leaf b"></span><span class="leaf c"></span>
+      </div>
+      <div>
+        <h1>CLOVER irrigation decision demonstrator</h1>
+        <div class="subtitle">Illustrative APSIM-style simulation · forecast-informed irrigation scheduling</div>
+      </div>
+    </div>
+    <div class="badge">Early-stage modelling concept · synthetic data</div>
+  </div>
+
+  <div class="grid">
+    <aside class="panel controls">
+      <h2>Scenario controls</h2>
+
+      <div class="control">
+        <label><span>Water allocation</span></label>
+        <select id="allocation">
+          <option value="unlimited">Non-limited</option>
+          <option value="limited">Limited</option>
+        </select>
+      </div>
+
+      <div class="control">
+        <label><span>SWD irrigation trigger</span><span class="value"><span id="triggerV">60</span> mm</span></label>
+        <input id="trigger" type="range" min="40" max="80" step="5" value="60">
+      </div>
+
+      <div class="control">
+        <label><span>Nominal irrigation amount</span><span class="value"><span id="irrV">40</span> mm</span></label>
+        <input id="irrAmount" type="range" min="20" max="50" step="5" value="40">
+      </div>
+
+      <div class="control">
+        <label><span>Rainfall threshold</span><span class="value"><span id="rainV">20</span> mm</span></label>
+        <input id="rainThreshold" type="range" min="5" max="40" step="5" value="20">
+      </div>
+
+      <div class="control">
+        <label><span>Probability threshold</span><span class="value"><span id="probV">70</span>%</span></label>
+        <input id="probThreshold" type="range" min="40" max="90" step="5" value="70">
+      </div>
+
+      <div class="control">
+        <label><span>Forecast look-ahead</span><span class="value"><span id="lookV">3</span> days</span></label>
+        <input id="lookahead" type="range" min="1" max="7" step="1" value="3">
+      </div>
+
+      <div class="control">
+        <label><span>Safety SWD cap</span><span class="value"><span id="capV">80</span> mm</span></label>
+        <input id="safetyCap" type="range" min="65" max="100" step="5" value="80">
+      </div>
+
+      <div class="btnrow">
+        <button class="primary" id="runBtn">Run simulation</button>
+        <button class="secondary" id="randomBtn">New random weather</button>
+      </div>
+
+      <div class="legend-row">
+        <span class="pill"><span class="dot" style="background:#3e83b7"></span>Rain / forecast</span>
+        <span class="pill"><span class="dot" style="background:#d78636"></span>Irrigation</span>
+        <span class="pill"><span class="dot" style="background:#2f8f63"></span>Forecast-informed</span>
+      </div>
+
+      <div class="tiny-note">
+        <b>Decision rule:</b> when SWD reaches the trigger, irrigation can be delayed if forecast rainfall meets both the selected rainfall amount and probability thresholds within the look-ahead period. Irrigation is forced at the safety SWD cap.
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="kpis">
+        <div class="panel kpi">
+          <div class="label">Irrigation saved</div>
+          <div class="big" id="savedIrr">–</div>
+          <div class="delta good" id="savedIrrD">vs baseline</div>
+        </div>
+        <div class="panel kpi">
+          <div class="label">Water saved</div>
+          <div class="big" id="waterSaved">–</div>
+          <div class="delta good" id="waterSavedD">gross applied irrigation</div>
+        </div>
+        <div class="panel kpi">
+          <div class="label">Effective rainfall gain</div>
+          <div class="big" id="effRain">–</div>
+          <div class="delta good">forecast-informed vs baseline</div>
+        </div>
+        <div class="panel kpi">
+          <div class="label">Yield effect</div>
+          <div class="big" id="yieldEffect">–</div>
+          <div class="delta" id="yieldEffectD">illustrative proxy</div>
+        </div>
+        <div class="panel kpi">
+          <div class="label">Energy / pumping proxy</div>
+          <div class="big" id="energyEffect">–</div>
+          <div class="delta good">proportional to irrigation volume</div>
+        </div>
+      </section>
+
+      <section class="scenario-strip">
+        <div class="panel scenario base">
+          <h3>Baseline — no weather forecast</h3>
+          <p>When SWD reaches the trigger, irrigation is applied. Scheduling reacts only to current crop/soil water status.</p>
+        </div>
+        <div class="panel scenario smart">
+          <h3>Improved — forecast-informed</h3>
+          <p>At the same SWD trigger, the short-term rainfall forecast is checked. Irrigation can be delayed to capture rainfall, subject to a safety limit.</p>
+        </div>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="chart-head">
+          <h2>Weather forecast, realised rainfall and irrigation</h2>
+          <span>45-day synthetic demonstration</span>
+        </div>
+        <svg id="weatherChart" class="chart" viewBox="0 0 1100 330" role="img" aria-label="Rainfall and irrigation chart"></svg>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="chart-head">
+          <h2>Simulated soil water deficit (SWD)</h2>
+          <span>Lower values = wetter soil · trigger shown as dashed line</span>
+        </div>
+        <svg id="swdChart" class="chart" viewBox="0 0 1100 300" role="img" aria-label="Soil water deficit chart"></svg>
+      </section>
+
+      <section class="lower">
+        <div class="panel table-panel">
+          <div class="chart-head">
+            <h2>Decision log</h2>
+            <span id="decisionCount"></span>
+          </div>
+          <div style="overflow:auto;max-height:355px">
+            <table>
+              <thead><tr><th>Day</th><th>Baseline</th><th>CLOVER decision</th><th>Forecast signal</th><th>Outcome</th></tr></thead>
+              <tbody id="decisionBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel logic">
+          <div class="chart-head"><h2>What this demonstration is testing</h2></div>
+          <div class="logicbox">
+            <strong>Non-limited allocation</strong>
+            <p>Can reliable short-term forecasts reduce the number of irrigations and total ML/ha while maintaining crop water status and yield?</p>
+          </div>
+          <div class="logicbox">
+            <strong>Limited allocation</strong>
+            <p>Can improved use of effective rainfall preserve scarce irrigation water for later crop demand and reduce water-stress-related yield loss?</p>
+          </div>
+          <div class="logicbox">
+            <strong>Parameters to explore with CoP farmers</strong>
+            <p>Rain amount × probability, forecast horizon, acceptable delay, SWD trigger and maximum irrigation amount.</p>
+          </div>
+          <div class="flow">
+            <span>SWD reaches trigger</span><span class="arrow">→</span>
+            <span>Check forecast</span><span class="arrow">→</span>
+            <span>Delay or irrigate</span><span class="arrow">→</span>
+            <span>APSIM outcome</span><span class="arrow">→</span>
+            <span>Value</span>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        Demonstration only. Synthetic weather and a simplified daily soil-water/yield proxy are used here to illustrate CLOVER decision logic; this is not an APSIM model result.
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
