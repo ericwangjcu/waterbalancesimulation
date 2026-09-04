@@ -6,18 +6,37 @@
 <title>CLOVER – Forecast-informed irrigation modelling demo</title>
 <link rel="stylesheet" href="style.css">
 <style>
-  .how-panel{margin:0 0 18px;padding:17px 18px;background:#fff;border:1px solid #e0e9e4;border-radius:16px;box-shadow:0 8px 24px rgba(31,68,50,.08)}
-  .how-title{font-size:15px;font-weight:700;margin:0 0 5px}
-  .how-intro{font-size:12px;line-height:1.5;color:#5f7369;margin:0 0 13px}
-  .how-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-  .how-step{position:relative;padding:11px 12px 11px 38px;background:#f7faf8;border:1px solid #e6ede9;border-radius:11px;min-height:78px}
-  .how-num{position:absolute;left:11px;top:11px;width:20px;height:20px;border-radius:50%;background:#2f8f63;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
-  .how-step b{display:block;font-size:11.5px;margin-bottom:3px;color:#274c3a}
-  .how-step span{display:block;font-size:10.5px;line-height:1.4;color:#65786e}
+  .how-panel{margin:0 0 18px;padding:18px;background:#fff;border:1px solid #e0e9e4;border-radius:16px;box-shadow:0 8px 24px rgba(31,68,50,.08)}
+  .how-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:12px}
+  .how-title{font-size:16px;font-weight:700;margin:0 0 5px}
+  .how-intro{font-size:12px;line-height:1.55;color:#5f7369;margin:0;max-width:980px}
+  .how-key{font-size:10.5px;line-height:1.4;color:#486357;background:#eef6f2;border:1px solid #dcebe3;border-radius:9px;padding:8px 10px;white-space:nowrap}
+  .how-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+  .how-step{position:relative;padding:12px 11px 11px 39px;background:#f7faf8;border:1px solid #e6ede9;border-radius:11px;min-height:118px}
+  .how-num{position:absolute;left:11px;top:12px;width:21px;height:21px;border-radius:50%;background:#2f8f63;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+  .how-step b{display:block;font-size:11.5px;margin-bottom:4px;color:#274c3a}
+  .how-step span{display:block;font-size:10.3px;line-height:1.45;color:#65786e}
+  .how-step.branch{background:#f2f7fa;border-color:#deebf2}
+  .how-step.branch .how-num{background:#3e83b7}
+  .how-step.branch b{color:#315d78}
+  .how-step.result{background:#f6f3fa;border-color:#e9e0f1}
+  .how-step.result .how-num{background:#7a5b92}
+  .how-step.result b{color:#624578}
+  .how-decision{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin-top:12px}
+  .how-branch{padding:11px 12px;border-radius:10px;border:1px solid #e3ebe7;background:#fafcfb}
+  .how-branch.baseline{border-left:4px solid #889a91}
+  .how-branch.clover{border-left:4px solid #2f8f63}
+  .how-branch b{display:block;font-size:11.5px;margin-bottom:4px}
+  .how-branch span{font-size:10.5px;line-height:1.45;color:#63776e}
+  .how-vs{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#8a9a92}
+  .worked-example{margin-top:10px;padding:11px 12px;border-radius:10px;background:#fff9f1;border:1px solid #f0dfc7;color:#68553f;font-size:10.5px;line-height:1.5}
+  .worked-example b{color:#5c4630}
   .how-outcomes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-  .how-outcome{font-size:10.5px;line-height:1.4;padding:8px 10px;border-radius:9px;background:#eef6f2;color:#3e6250}
+  .how-outcome{font-size:10.5px;line-height:1.45;padding:9px 10px;border-radius:9px;background:#eef6f2;color:#3e6250}
   .how-outcome.benchmark{background:#edf4f8;color:#3f6177}
-  @media(max-width:1000px){.how-steps{grid-template-columns:1fr 1fr}}
+  .slider-note{margin-top:9px;font-size:10.5px;line-height:1.45;color:#687b72;padding-top:9px;border-top:1px solid #edf1ef}
+  @media(max-width:1250px){.how-steps{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:900px){.how-head{display:block}.how-key{margin-top:8px;display:inline-block}.how-steps{grid-template-columns:1fr 1fr}.how-decision{grid-template-columns:1fr}.how-vs{padding:0}}
   @media(max-width:600px){.how-steps,.how-outcomes{grid-template-columns:1fr}}
 </style>
 </head>
@@ -37,18 +56,89 @@
   </header>
 
   <section class="how-panel">
-    <div class="how-title">How the demonstration works</div>
-    <p class="how-intro">The baseline and CLOVER simulations use the <b>same site, crop demand, weather, irrigation system and water availability</b>. The only difference is that CLOVER can use the short-term rainfall forecast before an irrigation decision.</p>
+    <div class="how-head">
+      <div>
+        <div class="how-title">How the demonstration works — step by step</div>
+        <p class="how-intro">Two simulations are run side-by-side for the same 45-day period. <b>Baseline</b> and <b>CLOVER</b> have the same site, crop water demand, realised weather, irrigation system and available water. The experiment isolates one change: <b>CLOVER is allowed to use the short-term rainfall forecast when deciding whether to irrigate now or wait.</b></p>
+      </div>
+      <div class="how-key">Only one treatment difference:<br><b>short-term forecast used in the decision</b></div>
+    </div>
+
     <div class="how-steps">
-      <div class="how-step"><div class="how-num">1</div><b>Track crop water deficit</b><span>Daily crop water use increases soil water deficit (SWD). Rain and irrigation reduce it.</span></div>
-      <div class="how-step"><div class="how-num">2</div><b>Irrigation becomes due</b><span>When SWD reaches the selected trigger, the baseline irrigates using the selected CP or LM assumptions.</span></div>
-      <div class="how-step"><div class="how-num">3</div><b>CLOVER checks the forecast</b><span>If forecast rain meets both the rainfall amount and probability thresholds within the look-ahead period, irrigation can be delayed.</span></div>
-      <div class="how-step"><div class="how-num">4</div><b>Compare the outcomes</b><span>Realised rainfall is then applied to both simulations and the model compares effective rainfall, SWD, irrigation use and the crop response.</span></div>
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <b>Set the farm scenario</b>
+        <span>Select Centre Pivot (CP) or Lateral Move (LM). This sets the physical irrigation assumptions, including minimum irrigation cycle, application capacity, efficiency and system configuration.</span>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <b>Set water availability</b>
+        <span>For the drought scenario, both strategies receive the same finite allocation. For the non-limited benchmark, irrigation water is not capped. This lets us test two different value pathways.</span>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <b>Start each simulated day</b>
+        <span>The crop uses water each day. The daily crop-water-demand value increases soil water deficit (SWD). Higher SWD means the soil profile is becoming drier.</span>
+      </div>
+      <div class="how-step">
+        <div class="how-num">4</div>
+        <b>Ask: is irrigation due?</b>
+        <span>If SWD is below the selected trigger, neither strategy irrigates. If SWD reaches the trigger, the model checks whether the CP/LM minimum cycle has elapsed and whether allocation is still available.</span>
+      </div>
+      <div class="how-step branch">
+        <div class="how-num">5</div>
+        <b>Baseline makes its decision</b>
+        <span>If irrigation is due, the system is cycle-ready and water is available, Baseline irrigates. It does not know that rain may arrive tomorrow or several days later.</span>
+      </div>
+      <div class="how-step branch">
+        <div class="how-num">6</div>
+        <b>CLOVER checks the forecast</b>
+        <span>CLOVER searches the selected look-ahead period. A forecast only qualifies when <b>both</b> forecast rainfall ≥ the rain threshold and probability ≥ the probability threshold.</span>
+      </div>
+      <div class="how-step branch">
+        <div class="how-num">7</div>
+        <b>Irrigate now or delay</b>
+        <span>If no forecast qualifies, CLOVER irrigates like Baseline. If a forecast qualifies, CLOVER delays irrigation — unless SWD has reached the forced-irrigation limit, set 20 mm drier than the trigger.</span>
+      </div>
+      <div class="how-step">
+        <div class="how-num">8</div>
+        <b>Apply irrigation, then actual rain</b>
+        <span>Any irrigation chosen for that day reduces SWD. The same <b>realised rainfall</b> is then applied to both simulations. Rain that fills an existing soil-water deficit counts as effective rainfall; excess is treated as rain loss.</span>
+      </div>
+      <div class="how-step">
+        <div class="how-num">9</div>
+        <b>Track stress and crop response</b>
+        <span>If SWD becomes very high, a water-stress index accumulates. The current demo converts accumulated stress into an illustrative cane-yield response. This is a proxy, not an APSIM result.</span>
+      </div>
+      <div class="how-step result">
+        <div class="how-num">10</div>
+        <b>Repeat and compare</b>
+        <span>The process repeats for all 45 days. We then compare effective rainfall, irrigation timing and volume, allocation use, water stress and the indicative yield response between Baseline and CLOVER.</span>
+      </div>
     </div>
+
+    <div class="how-decision">
+      <div class="how-branch baseline">
+        <b>Baseline decision at an irrigation window</b>
+        <span>SWD ≥ trigger → CP/LM cycle ready → allocation available → <b>irrigate now</b>.</span>
+      </div>
+      <div class="how-vs">VS</div>
+      <div class="how-branch clover">
+        <b>CLOVER decision at the same irrigation window</b>
+        <span>SWD ≥ trigger → cycle ready → allocation available → check forecast → <b>irrigate now or delay for qualifying rain</b>.</span>
+      </div>
+    </div>
+
+    <div class="worked-example">
+      <b>Example:</b> SWD reaches 60 mm, so irrigation is due. The forecast says 25 mm of rain in the next 2 days at 80% probability. If the controls are set to <b>20 mm rainfall</b>, <b>70% probability</b> and a <b>3-day look-ahead</b>, that forecast qualifies. Baseline irrigates now; CLOVER waits. If the rain occurs, CLOVER may receive more effective rainfall because its soil profile had more room to store it. If the forecast does not verify and the soil becomes too dry, the forced-irrigation rule prevents indefinite delay.
+    </div>
+
     <div class="how-outcomes">
-      <div class="how-outcome"><b>Limited water / drought:</b> better timing can capture more useful rainfall, preserve scarce irrigation for later crop demand and reduce water stress, potentially protecting TCH/TSH.</div>
-      <div class="how-outcome benchmark"><b>Non-limited benchmark:</b> better timing can replace some irrigation with effective rainfall, reducing applied water and pumping while maintaining yield.</div>
+      <div class="how-outcome"><b>Limited water / drought pathway:</b> both strategies have the same finite irrigation allocation. Better timing can increase effective rainfall and leave scarce irrigation available for later crop demand → less stress → potential TCH/TSH protection.</div>
+      <div class="how-outcome benchmark"><b>Non-limited benchmark pathway:</b> irrigation water is always available. Better timing can allow rainfall to replace some irrigation → fewer/lower irrigation applications → reduced pumping and water cost while yield remains similar.</div>
     </div>
+
+    <div class="slider-note"><b>Why a slider sometimes appears to do nothing:</b> rainfall and probability thresholds are decision gates. Changing 70% to 75%, for example, only changes the irrigation schedule if a forecast near that boundary occurs during a day when irrigation is actually due, the system is cycle-ready and water is available. The “Threshold response” box below shows how many forecasts qualify and how many intersect real irrigation decision windows.</div>
   </section>
 
   <div class="grid">
