@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>CLOVER – Forecast-informed irrigation modelling demo</title>
 <link rel="stylesheet" href="style.css">
+<style>
+  .how-panel{margin:0 0 18px;padding:17px 18px;background:#fff;border:1px solid #e0e9e4;border-radius:16px;box-shadow:0 8px 24px rgba(31,68,50,.08)}
+  .how-title{font-size:15px;font-weight:700;margin:0 0 5px}
+  .how-intro{font-size:12px;line-height:1.5;color:#5f7369;margin:0 0 13px}
+  .how-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .how-step{position:relative;padding:11px 12px 11px 38px;background:#f7faf8;border:1px solid #e6ede9;border-radius:11px;min-height:78px}
+  .how-num{position:absolute;left:11px;top:11px;width:20px;height:20px;border-radius:50%;background:#2f8f63;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+  .how-step b{display:block;font-size:11.5px;margin-bottom:3px;color:#274c3a}
+  .how-step span{display:block;font-size:10.5px;line-height:1.4;color:#65786e}
+  .how-outcomes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .how-outcome{font-size:10.5px;line-height:1.4;padding:8px 10px;border-radius:9px;background:#eef6f2;color:#3e6250}
+  .how-outcome.benchmark{background:#edf4f8;color:#3f6177}
+  @media(max-width:1000px){.how-steps{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.how-steps,.how-outcomes{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <div class="app">
@@ -20,6 +35,21 @@
     </div>
     <div class="badge">Atherton Tablelands modelling scenario · synthetic weather</div>
   </header>
+
+  <section class="how-panel">
+    <div class="how-title">How the demonstration works</div>
+    <p class="how-intro">The baseline and CLOVER simulations use the <b>same site, crop demand, weather, irrigation system and water availability</b>. The only difference is that CLOVER can use the short-term rainfall forecast before an irrigation decision.</p>
+    <div class="how-steps">
+      <div class="how-step"><div class="how-num">1</div><b>Track crop water deficit</b><span>Daily crop water use increases soil water deficit (SWD). Rain and irrigation reduce it.</span></div>
+      <div class="how-step"><div class="how-num">2</div><b>Irrigation becomes due</b><span>When SWD reaches the selected trigger, the baseline irrigates using the selected CP or LM assumptions.</span></div>
+      <div class="how-step"><div class="how-num">3</div><b>CLOVER checks the forecast</b><span>If forecast rain meets both the rainfall amount and probability thresholds within the look-ahead period, irrigation can be delayed.</span></div>
+      <div class="how-step"><div class="how-num">4</div><b>Compare the outcomes</b><span>Realised rainfall is then applied to both simulations and the model compares effective rainfall, SWD, irrigation use and the crop response.</span></div>
+    </div>
+    <div class="how-outcomes">
+      <div class="how-outcome"><b>Limited water / drought:</b> better timing can capture more useful rainfall, preserve scarce irrigation for later crop demand and reduce water stress, potentially protecting TCH/TSH.</div>
+      <div class="how-outcome benchmark"><b>Non-limited benchmark:</b> better timing can replace some irrigation with effective rainfall, reducing applied water and pumping while maintaining yield.</div>
+    </div>
+  </section>
 
   <div class="grid">
     <aside class="panel controls">
