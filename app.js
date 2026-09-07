@@ -1,5 +1,29 @@
 (() => {
   const N = 36;
+  const BENCHMARKS = {
+    manual: {
+      code: "A",
+      name: "Manual + fixed cycle",
+      operation: "Manual operation",
+      rule: "Fixed-cycle irrigation",
+      note: "No automation, no crop-model/SWD scheduling and no weather forecast. SWD is shown only as context."
+    },
+    automation: {
+      code: "B",
+      name: "Automation + fixed cycle",
+      operation: "Automated / remote operation",
+      rule: "Fixed-cycle irrigation",
+      note: "Automation changes operation/labour, but this simple visual keeps the same fixed-cycle irrigation timing and no weather forecast."
+    },
+    scheduling: {
+      code: "C",
+      name: "Automation + SWD scheduling",
+      operation: "Automated / remote operation",
+      rule: "SWD-triggered irrigation",
+      note: "Irrigation is triggered by crop-water status. Steve has flagged that this may not represent normal practice under limited water."
+    }
+  };
+
   let seed = 20260907;
   let weather = [];
   const $ = id => document.getElementById(id);
@@ -21,6 +45,7 @@
   }
 
   function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
   function dateLabel(i){
     const d=new Date(2026,8,7+i);
     return d.toLocaleDateString("en-AU",{day:"2-digit",month:"short"});
@@ -28,26 +53,32 @@
 
   function params(){
     return {
-      trigger:+$("swdTrigger").value,
-      irr:+$("irrigationAmount").value,
-      rain:+$("rainThreshold").value,
-      prob:+$("probThreshold").value,
-      look:+$("lookahead").value
+      benchmark: $("benchmark").value,
+      cycle: +$("cycleDays").value,
+      trigger: +$("swdTrigger").value,
+      irr: +$("irrigationAmount").value,
+      rain: +$("rainThreshold").value,
+      prob: +$("probThreshold").value,
+      look: +$("lookahead").value
     };
   }
 
-  function simulateBaseline(p){
+  function simulateBenchmark(p){
     let swd=34;
     const rows=[];
     const irrigation=[];
+    const usesSwd=p.benchmark==="scheduling";
+    const firstFixedDay=4;
 
     for(let i=0;i<N;i++){
       const w=weather[i];
       swd+=w.use;
       const swdAtDecision=swd;
-      const due=swd>=p.trigger;
-      let applied=0;
+      const due=usesSwd
+        ? swd>=p.trigger
+        : (i>=firstFixedDay && (i-firstFixedDay)%p.cycle===0);
 
+      let applied=0;
       if(due){
         applied=p.irr;
         swd=Math.max(0,swd-applied);
@@ -67,6 +98,7 @@
         swdEnd:swd
       });
     }
+
     return {rows,irrigation};
   }
 
@@ -90,20 +122,19 @@
       });
     }
 
-    // Give the default example a few different forecast signals around baseline irrigation dates.
-    // This is only to make the discussion sliders useful; it is not a forecast model.
-    const provisional=simulateBaseline({trigger:60,irr:40});
+    // Deliberately varied synthetic forecast opportunities around likely irrigation windows.
+    // These are only to make the discussion controls useful, not a forecast model.
+    const anchors=[4,11,18,25,32];
     const examples=[
       {fc:14,prob:62,ahead:1},
       {fc:24,prob:74,ahead:2},
       {fc:31,prob:86,ahead:1},
       {fc:19,prob:82,ahead:2},
-      {fc:28,prob:66,ahead:1},
-      {fc:35,prob:78,ahead:2}
+      {fc:28,prob:66,ahead:1}
     ];
-    provisional.irrigation.forEach((ev,j)=>{
-      const ex=examples[j%examples.length];
-      const k=Math.min(N-1,ev.day+ex.ahead);
+    anchors.forEach((day,j)=>{
+      const ex=examples[j];
+      const k=Math.min(N-1,day+ex.ahead);
       weather[k].fc=ex.fc;
       weather[k].prob=ex.prob;
     });
@@ -197,11 +228,11 @@
       ["#b8d7ec","Forecast rain","bar"],
       ["#3e83b7","Realised rain","bar"],
       ["#245f8c","Rain probability","line"],
-      ["#d78636","Example irrigation","bar"],
+      ["#d78636","Benchmark irrigation","bar"],
       ["#2f8f63","Consider delay","circle"]
     ];
     legend.forEach((item,j)=>{
-      const xx=430+j*132;
+      const xx=420+j*137;
       if(item[2]==="line"){
         svg.appendChild(svgEl("line",{x1:xx,y1:12,x2:xx+15,y2:12,stroke:item[0],"stroke-width":2,"stroke-dasharray":"4 3"}));
       }else if(item[2]==="circle"){
@@ -232,8 +263,11 @@
     svg.appendChild(svgEl("text",{x:9,y:17,class:"axistext"},"SWD mm"));
 
     const ty=y(p.trigger);
+    const triggerText=p.benchmark==="scheduling"
+      ? "SWD scheduling trigger "+p.trigger+" mm"
+      : "SWD reference "+p.trigger+" mm — not used by A/B";
     svg.appendChild(svgEl("line",{x1:L,y1:ty,x2:W-R,y2:ty,stroke:"#879c91","stroke-width":1.3,"stroke-dasharray":"6 5"}));
-    svg.appendChild(svgEl("text",{x:W-R-5,y:ty-5,"text-anchor":"end",class:"axistext"},"irrigation trigger "+p.trigger+" mm"));
+    svg.appendChild(svgEl("text",{x:W-R-5,y:ty-5,"text-anchor":"end",class:"axistext"},triggerText));
 
     svg.appendChild(svgEl("path",{d:linePath(sim.rows.map(r=>r.swdEnd),x,y),fill:"none",stroke:"#5f756a","stroke-width":2.5}));
 
@@ -258,9 +292,10 @@
   function drawDecisions(p,sim,list){
     const wrap=$("decisionCards");
     wrap.innerHTML="";
+    const b=BENCHMARKS[p.benchmark];
 
     if(!list.length){
-      wrap.innerHTML='<div class="empty-note">No irrigation event occurs in this synthetic example with the current SWD trigger and irrigation amount.</div>';
+      wrap.innerHTML='<div class="empty-note">No benchmark irrigation event occurs in this synthetic example with the current settings.</div>';
       return;
     }
 
@@ -271,42 +306,73 @@
       const signalText=s
         ? `${s.fc.toFixed(0)} mm at ${s.prob}% ${s.ahead===0?"today":"in "+s.ahead+" day"+(s.ahead===1?"":"s")}`
         : `No forecast within ${p.look} day${p.look===1?"":"s"} meets both thresholds`;
+      const ruleText=p.benchmark==="scheduling"
+        ? `SWD ≥ ${p.trigger} mm`
+        : `fixed ${p.cycle}-day cycle`;
 
       card.innerHTML=`
-        <div class="decision-date">${dateLabel(item.day)}</div>
-        <div class="decision-row"><b>SWD at decision:</b> ${item.swd.toFixed(0)} mm</div>
-        <div class="decision-row"><b>Example baseline:</b> irrigate ${p.irr} mm</div>
+        <div class="decision-date">${dateLabel(item.day)} · Benchmark ${b.code}</div>
+        <div class="decision-row"><b>Rule:</b> ${ruleText}</div>
+        <div class="decision-row"><b>SWD at event:</b> ${item.swd.toFixed(0)} mm</div>
+        <div class="decision-row"><b>Benchmark:</b> irrigate ${p.irr} mm</div>
         <div class="action ${s?"wait":"irrigate"}">${s?"CONSIDER WAITING":"NO FORECAST SIGNAL"}</div>
         <div class="signal">${signalText}</div>`;
       wrap.appendChild(card);
     });
   }
 
+  function updateBenchmarkText(p){
+    const b=BENCHMARKS[p.benchmark];
+    $("benchmarkNote").textContent=b.note;
+    $("cycleControl").style.display=p.benchmark==="scheduling" ? "none" : "";
+
+    const swdLabel=$("swdTrigger").closest(".control").querySelector("label span");
+    if(p.benchmark==="scheduling"){
+      swdLabel.textContent="SWD irrigation trigger";
+      $("swdNote").textContent="Benchmark C uses this SWD threshold to trigger irrigation.";
+      $("swdChartSub").textContent="Benchmark C: SWD is the scheduling signal that triggers irrigation.";
+    }else{
+      swdLabel.textContent="SWD reference level";
+      $("swdNote").textContent="Shown for context only. Benchmarks A/B irrigate on the fixed cycle, not from SWD.";
+      $("swdChartSub").textContent=`Benchmark ${b.code}: irrigation follows the fixed cycle; SWD is displayed only to show crop-water status at each event.`;
+    }
+
+    $("decisionTitle").textContent=`Benchmark ${b.code} irrigation decision points`;
+    $("decisionDescription").textContent=`${b.operation}; ${b.rule.toLowerCase()}; no weather forecast. At each benchmark irrigation event, the forecast is checked only to see whether a delay may be worth discussing.`;
+  }
+
   function update(){
     const p=params();
+    $("cycleV").textContent=p.cycle;
     $("swdV").textContent=p.trigger;
     $("irrV").textContent=p.irr;
     $("rainV").textContent=p.rain;
     $("probV").textContent=p.prob;
     $("lookV").textContent=p.look;
+    updateBenchmarkText(p);
 
-    const sim=simulateBaseline(p);
+    const sim=simulateBenchmark(p);
     const list=sim.irrigation.map(ev=>({
       day:ev.day,
       swd:ev.swdAtDecision,
       signal:signalFor(ev.day,p)
     }));
     const flagged=list.filter(d=>d.signal).length;
+    const b=BENCHMARKS[p.benchmark];
 
-    $("summaryMain").textContent=`${sim.irrigation.length} example irrigation events; ${flagged} flagged to consider waiting.`;
-    $("summarySub").textContent="Changing SWD or irrigation amount changes when irrigation is due; changing forecast settings changes which of those events are flagged.";
+    $("summaryMain").textContent=`Benchmark ${b.code}: ${sim.irrigation.length} irrigation events; ${flagged} flagged to consider waiting.`;
+    $("summarySub").textContent=p.benchmark==="scheduling"
+      ? "Changing SWD changes when irrigation is due. Forecast settings change which of those events are flagged."
+      : `Irrigation follows the example ${p.cycle}-day cycle. SWD is contextual; forecast settings change which events are flagged.`;
 
     drawWeather(p,sim,list);
     drawSwd(p,sim,list);
     drawDecisions(p,sim,list);
   }
 
-  ["swdTrigger","irrigationAmount","rainThreshold","probThreshold","lookahead"].forEach(id=>$(id).addEventListener("input",update));
+  ["benchmark","cycleDays","swdTrigger","irrigationAmount","rainThreshold","probThreshold","lookahead"]
+    .forEach(id=>$(id).addEventListener("input",update));
+
   $("randomBtn").addEventListener("click",()=>{
     seed=Math.floor(Math.random()*1e9);
     generateWeather();
