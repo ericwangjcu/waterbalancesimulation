@@ -11,30 +11,87 @@
   <header class="header">
     <div>
       <h1>CLOVER — forecast-informed irrigation discussion</h1>
-      <div class="subtitle">Simple visual for discussing SWD, irrigation timing and short-term rainfall forecasts</div>
+      <div class="subtitle">Simple visual for discussing the benchmark, SWD, irrigation timing and short-term rainfall forecasts</div>
     </div>
-    <div class="badge">Synthetic example only · not model results</div>
+    <div class="badge">Synthetic example only · benchmark not yet agreed</div>
   </header>
 
   <section class="intro panel">
-    <div class="intro-title">Question for discussion</div>
-    <div class="question">When <b>soil water deficit (SWD)</b> reaches an irrigation trigger, could a sufficiently strong short-term rainfall forecast justify <b>waiting before irrigating</b>?</div>
-    <div class="steps">
-      <div class="step"><span>1</span><div><b>Track SWD</b><small>Crop water use increases SWD. Rain and irrigation reduce it.</small></div></div>
-      <div class="step"><span>2</span><div><b>Irrigation becomes due</b><small>In this simple example, irrigation is due when SWD reaches the selected trigger.</small></div></div>
-      <div class="step"><span>3</span><div><b>Check the forecast</b><small>At that decision point, check forecast rain amount, probability and look-ahead.</small></div></div>
-      <div class="step"><span>4</span><div><b>Discuss irrigate or wait</b><small>The page only flags whether the forecast may justify considering a delay.</small></div></div>
+    <div class="intro-title">First question for the team</div>
+    <div class="question">What should we use as the <b>benchmark starting position</b> before we test the additional value of short-term weather forecasting?</div>
+
+    <div class="benchmark-grid">
+      <div class="benchmark-card">
+        <div class="benchmark-num">A</div>
+        <b>Conventional baseline</b>
+        <span>Manual operation</span>
+        <span>Fixed-cycle irrigation</span>
+        <span>No crop-model/SWD scheduling</span>
+        <span>No weather forecast</span>
+      </div>
+      <div class="benchmark-card">
+        <div class="benchmark-num">B</div>
+        <b>Automation baseline</b>
+        <span>Automated / remote operation</span>
+        <span>Fixed-cycle irrigation</span>
+        <span>No crop-model/SWD scheduling</span>
+        <span>No weather forecast</span>
+      </div>
+      <div class="benchmark-card">
+        <div class="benchmark-num">C</div>
+        <b>Scheduling baseline</b>
+        <span>Automated / remote operation</span>
+        <span>SWD / crop-model scheduling</span>
+        <span>Irrigation triggered by crop-water status</span>
+        <span>No weather forecast</span>
+      </div>
+      <div class="benchmark-card forecast">
+        <div class="benchmark-num">+</div>
+        <b>Forecast-informed option</b>
+        <span>Start from the selected benchmark</span>
+        <span>Add short-term rainfall forecast</span>
+        <span>Use rain amount × probability × horizon</span>
+        <span>Consider changing irrigation timing</span>
+      </div>
     </div>
-    <div class="caution"><b>Purpose:</b> visualise the discussion only. The SWD calculation, irrigation rule and weather are deliberately simplified and do not represent APSIM, IrrigWeb or a final CLOVER algorithm.</div>
+
+    <div class="benchmark-question"><b>Key discussion:</b> do we measure forecast value against A, B or C? Steve's point is important: in limited-water situations, SWD/crop-model scheduling may not represent normal sugarcane farmer practice, so C should not automatically be assumed as the benchmark.</div>
+  </section>
+
+  <section class="intro panel compact-intro">
+    <div class="intro-title">How the visual works</div>
+    <div class="steps">
+      <div class="step"><span>1</span><div><b>Select a benchmark</b><small>A/B use an example fixed cycle. C uses SWD to decide when irrigation is due.</small></div></div>
+      <div class="step"><span>2</span><div><b>Show irrigation events</b><small>The SWD chart is retained so we can see crop-water status when those events occur.</small></div></div>
+      <div class="step"><span>3</span><div><b>Check the forecast</b><small>At each benchmark irrigation event, look ahead and check rainfall amount and probability.</small></div></div>
+      <div class="step"><span>4</span><div><b>Discuss irrigate or wait</b><small>The page only flags a possible delay. It does not claim this is the final CLOVER rule.</small></div></div>
+    </div>
+    <div class="caution"><b>Important:</b> automation itself does not change irrigation dates in this simple visual. A and B therefore use the same fixed-cycle timing; the difference between them is operational/labour context. The real benchmark and farm assumptions need to be agreed by the team and farmers.</div>
   </section>
 
   <div class="layout">
     <aside class="panel controls">
       <h2>Discussion controls</h2>
 
+      <div class="control select-control">
+        <label><span>Benchmark to compare</span></label>
+        <select id="benchmark">
+          <option value="manual">A — Manual + fixed cycle</option>
+          <option value="automation">B — Automation + fixed cycle</option>
+          <option value="scheduling">C — Automation + SWD scheduling</option>
+        </select>
+        <div id="benchmarkNote" class="control-note"></div>
+      </div>
+
+      <div class="control" id="cycleControl">
+        <label><span>Example fixed cycle</span><strong><span id="cycleV">7</span> days</strong></label>
+        <input id="cycleDays" type="range" min="4" max="10" step="1" value="7" />
+      </div>
+
       <div class="control">
         <label><span>SWD irrigation trigger</span><strong><span id="swdV">60</span> mm</strong></label>
         <input id="swdTrigger" type="range" min="40" max="80" step="5" value="60" />
+        <div id="swdNote" class="control-note"></div>
       </div>
 
       <div class="control">
@@ -42,7 +99,7 @@
         <input id="irrigationAmount" type="range" min="20" max="50" step="5" value="40" />
       </div>
 
-      <div class="control">
+      <div class="control divider-control">
         <label><span>Forecast rain threshold</span><strong><span id="rainV">20</span> mm</strong></label>
         <input id="rainThreshold" type="range" min="5" max="40" step="5" value="20" />
       </div>
@@ -70,10 +127,10 @@
       <section class="panel chart-panel">
         <div class="chart-head">
           <div>
-            <h2>Rainfall forecast and example irrigation events</h2>
-            <div class="chart-sub">Light blue = forecast rain · dark blue = realised rain · dashed blue = forecast probability · orange = example baseline irrigation</div>
+            <h2>Rainfall forecast and benchmark irrigation events</h2>
+            <div class="chart-sub">Light blue = forecast rain · dark blue = realised rain · dashed blue = forecast probability · orange = benchmark irrigation</div>
           </div>
-          <div class="chart-note">Green circles mark irrigation dates where the selected forecast rule would suggest discussing a delay</div>
+          <div class="chart-note">Green circles mark benchmark irrigation dates where the selected forecast rule would suggest discussing a delay</div>
         </div>
         <svg id="weatherChart" viewBox="0 0 1100 390" role="img" aria-label="Synthetic rainfall forecast and irrigation chart"></svg>
       </section>
@@ -82,32 +139,33 @@
         <div class="chart-head">
           <div>
             <h2>Illustrative soil water deficit (SWD)</h2>
-            <div class="chart-sub">SWD increases with daily crop water use and decreases with realised rain and example irrigation</div>
+            <div id="swdChartSub" class="chart-sub">SWD is shown alongside the selected benchmark irrigation schedule</div>
           </div>
-          <div class="chart-note">This is only a simple water-balance illustration, not APSIM or IrrigWeb</div>
+          <div class="chart-note">Simple water-balance illustration only · not APSIM or IrrigWeb</div>
         </div>
         <svg id="swdChart" viewBox="0 0 1100 300" role="img" aria-label="Illustrative soil water deficit chart"></svg>
       </section>
 
       <section class="panel decisions">
         <div class="decision-head">
-          <h2>Irrigation decision points</h2>
-          <span>Baseline irrigates at the SWD trigger. The forecast column only indicates whether that event may be worth discussing as a delay.</span>
+          <h2 id="decisionTitle">Benchmark irrigation decision points</h2>
+          <span id="decisionDescription">At each benchmark irrigation event, the forecast is checked only to see whether the event might be worth discussing as a delay.</span>
         </div>
         <div id="decisionCards" class="decision-cards"></div>
       </section>
 
       <section class="panel takeaway">
-        <h2>What we are testing here</h2>
-        <div class="takeaway-grid">
-          <div><b>Baseline question</b><span>At what SWD should an irrigation event normally be triggered, and how much would normally be applied?</span></div>
-          <div><b>Forecast question</b><span>At that irrigation decision point, what rainfall amount × probability × look-ahead would be strong enough to consider waiting?</span></div>
+        <h2>What the benchmark comparison lets us discuss</h2>
+        <div class="takeaway-grid three">
+          <div><b>A → forecast</b><span>What is the value of adding forecast information to current manual, fixed-cycle practice?</span></div>
+          <div><b>B → forecast</b><span>If automation is already present, what additional value comes specifically from forecast-informed timing?</span></div>
+          <div><b>C → forecast</b><span>If good SWD/crop scheduling is already present, what incremental value is left for the weather forecast?</span></div>
         </div>
       </section>
     </main>
   </div>
 
-  <footer>Discussion prototype · synthetic weather, simplified SWD and example irrigation only</footer>
+  <footer>Discussion prototype · synthetic weather, simplified SWD and benchmark irrigation only</footer>
 </div>
 <script src="app.js"></script>
 </body>
