@@ -11,25 +11,36 @@
   <header class="header">
     <div>
       <h1>CLOVER — forecast-informed irrigation discussion</h1>
-      <div class="subtitle">A simple visual to support discussion of Steve's initial modelling question</div>
+      <div class="subtitle">Simple visual for discussing SWD, irrigation timing and short-term rainfall forecasts</div>
     </div>
     <div class="badge">Synthetic example only · not model results</div>
   </header>
 
   <section class="intro panel">
     <div class="intro-title">Question for discussion</div>
-    <div class="question">When an irrigation event is due, what combination of <b>forecast rainfall</b>, <b>rain probability</b> and <b>forecast horizon</b> would be enough to consider waiting before irrigating?</div>
+    <div class="question">When <b>soil water deficit (SWD)</b> reaches an irrigation trigger, could a sufficiently strong short-term rainfall forecast justify <b>waiting before irrigating</b>?</div>
     <div class="steps">
-      <div class="step"><span>1</span><div><b>Irrigation is due</b><small>This example uses a few fixed irrigation decision dates only to demonstrate the idea.</small></div></div>
-      <div class="step"><span>2</span><div><b>Check the short-term forecast</b><small>Look ahead the selected number of days and check both rainfall amount and probability.</small></div></div>
-      <div class="step"><span>3</span><div><b>Discuss “irrigate now” or “wait”</b><small>The page highlights which decisions would be reconsidered. It does not claim this is the final irrigation rule.</small></div></div>
+      <div class="step"><span>1</span><div><b>Track SWD</b><small>Crop water use increases SWD. Rain and irrigation reduce it.</small></div></div>
+      <div class="step"><span>2</span><div><b>Irrigation becomes due</b><small>In this simple example, irrigation is due when SWD reaches the selected trigger.</small></div></div>
+      <div class="step"><span>3</span><div><b>Check the forecast</b><small>At that decision point, check forecast rain amount, probability and look-ahead.</small></div></div>
+      <div class="step"><span>4</span><div><b>Discuss irrigate or wait</b><small>The page only flags whether the forecast may justify considering a delay.</small></div></div>
     </div>
-    <div class="caution"><b>Purpose:</b> visualise the decision concept only. The real site assumptions, irrigation system constraints, crop modelling, water allocation and value analysis still need to be agreed by the project team.</div>
+    <div class="caution"><b>Purpose:</b> visualise the discussion only. The SWD calculation, irrigation rule and weather are deliberately simplified and do not represent APSIM, IrrigWeb or a final CLOVER algorithm.</div>
   </section>
 
   <div class="layout">
     <aside class="panel controls">
-      <h2>Try different forecast rules</h2>
+      <h2>Discussion controls</h2>
+
+      <div class="control">
+        <label><span>SWD irrigation trigger</span><strong><span id="swdV">60</span> mm</strong></label>
+        <input id="swdTrigger" type="range" min="40" max="80" step="5" value="60" />
+      </div>
+
+      <div class="control">
+        <label><span>Example irrigation amount</span><strong><span id="irrV">40</span> mm</strong></label>
+        <input id="irrigationAmount" type="range" min="20" max="50" step="5" value="40" />
+      </div>
 
       <div class="control">
         <label><span>Forecast rain threshold</span><strong><span id="rainV">20</span> mm</strong></label>
@@ -59,33 +70,44 @@
       <section class="panel chart-panel">
         <div class="chart-head">
           <div>
-            <h2>Synthetic short-term rainfall forecast</h2>
-            <div class="chart-sub">Light blue = forecast rain · dark blue = realised rain · dashed line = forecast probability</div>
+            <h2>Rainfall forecast and example irrigation events</h2>
+            <div class="chart-sub">Light blue = forecast rain · dark blue = realised rain · dashed blue = forecast probability · orange = example baseline irrigation</div>
           </div>
-          <div class="chart-note">Grey lines show example irrigation decision dates</div>
+          <div class="chart-note">Green circles mark irrigation dates where the selected forecast rule would suggest discussing a delay</div>
         </div>
-        <svg id="weatherChart" viewBox="0 0 1100 390" role="img" aria-label="Synthetic rainfall forecast and irrigation decision chart"></svg>
+        <svg id="weatherChart" viewBox="0 0 1100 390" role="img" aria-label="Synthetic rainfall forecast and irrigation chart"></svg>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="chart-head">
+          <div>
+            <h2>Illustrative soil water deficit (SWD)</h2>
+            <div class="chart-sub">SWD increases with daily crop water use and decreases with realised rain and example irrigation</div>
+          </div>
+          <div class="chart-note">This is only a simple water-balance illustration, not APSIM or IrrigWeb</div>
+        </div>
+        <svg id="swdChart" viewBox="0 0 1100 300" role="img" aria-label="Illustrative soil water deficit chart"></svg>
       </section>
 
       <section class="panel decisions">
         <div class="decision-head">
-          <h2>Example irrigation decisions</h2>
-          <span>Baseline does not use the forecast. CLOVER column only shows whether the forecast would trigger a discussion to wait.</span>
+          <h2>Irrigation decision points</h2>
+          <span>Baseline irrigates at the SWD trigger. The forecast column only indicates whether that event may be worth discussing as a delay.</span>
         </div>
         <div id="decisionCards" class="decision-cards"></div>
       </section>
 
       <section class="panel takeaway">
-        <h2>What this page is — and is not</h2>
+        <h2>What we are testing here</h2>
         <div class="takeaway-grid">
-          <div><b>It is</b><span>a quick way to explore Steve's “rainfall amount × probability” question and see how different thresholds change the number of irrigation decisions affected.</span></div>
-          <div><b>It is not</b><span>an APSIM result, a final CLOVER algorithm, a site-specific recommendation, or evidence of water/yield savings.</span></div>
+          <div><b>Baseline question</b><span>At what SWD should an irrigation event normally be triggered, and how much would normally be applied?</span></div>
+          <div><b>Forecast question</b><span>At that irrigation decision point, what rainfall amount × probability × look-ahead would be strong enough to consider waiting?</span></div>
         </div>
       </section>
     </main>
   </div>
 
-  <footer>Discussion prototype · synthetic weather and example irrigation dates only</footer>
+  <footer>Discussion prototype · synthetic weather, simplified SWD and example irrigation only</footer>
 </div>
 <script src="app.js"></script>
 </body>
