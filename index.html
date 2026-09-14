@@ -49,7 +49,7 @@
       </div>
       <div>
         <h1>CLOVER irrigation decision demonstrator</h1>
-        <div class="subtitle">Initial modelling concept · short-term forecast + scheduling + automation</div>
+        <div class="subtitle">Initial modelling concept · soil water deficit + short-term forecast + irrigation automation</div>
       </div>
     </div>
     <div class="badge">Atherton Tablelands modelling scenario · synthetic weather</div>
@@ -59,9 +59,9 @@
     <div class="how-head">
       <div>
         <div class="how-title">How the demonstration works — step by step</div>
-        <p class="how-intro">Two simulations are run side-by-side for the same 45-day period. <b>Baseline</b> and <b>CLOVER</b> have the same site, crop water demand, realised weather, irrigation system and available water. The experiment isolates one change: <b>CLOVER is allowed to use the short-term rainfall forecast when deciding whether to irrigate now or wait.</b></p>
+        <p class="how-intro">Two simulations are run side-by-side for the same 45-day period. <b>Baseline</b> and <b>CLOVER</b> have the same site, crop water demand, realised weather, irrigation system and available water. Both track <b>soil water deficit (SWD)</b>. CLOVER then combines the current SWD/crop-water state with the short-term rainfall forecast before deciding whether to irrigate now or wait.</p>
       </div>
-      <div class="how-key">Only one treatment difference:<br><b>short-term forecast used in the decision</b></div>
+      <div class="how-key"><b>CLOVER decision inputs:</b><br>SWD + rainfall forecast + irrigation constraints</div>
     </div>
 
     <div class="how-steps">
@@ -77,8 +77,8 @@
       </div>
       <div class="how-step">
         <div class="how-num">3</div>
-        <b>Start each simulated day</b>
-        <span>The crop uses water each day. The daily crop-water-demand value increases soil water deficit (SWD). Higher SWD means the soil profile is becoming drier.</span>
+        <b>Track soil water deficit</b>
+        <span>The crop uses water each day. Daily crop-water demand increases SWD, while rainfall and irrigation reduce it. CLOVER uses this current soil-water state as part of the irrigation decision.</span>
       </div>
       <div class="how-step">
         <div class="how-num">4</div>
@@ -88,17 +88,17 @@
       <div class="how-step branch">
         <div class="how-num">5</div>
         <b>Baseline makes its decision</b>
-        <span>If irrigation is due, the system is cycle-ready and water is available, Baseline irrigates. It does not know that rain may arrive tomorrow or several days later.</span>
+        <span>If irrigation is due, the system is cycle-ready and water is available, Baseline irrigates. It responds to SWD but does not use future rainfall information.</span>
       </div>
       <div class="how-step branch">
         <div class="how-num">6</div>
-        <b>CLOVER checks the forecast</b>
-        <span>CLOVER searches the selected look-ahead period. A forecast only qualifies when <b>both</b> forecast rainfall ≥ the rain threshold and probability ≥ the probability threshold.</span>
+        <b>CLOVER combines SWD + forecast</b>
+        <span>CLOVER first knows the current SWD, then searches the selected look-ahead period. A forecast qualifies only when <b>both</b> forecast rainfall ≥ the rain threshold and probability ≥ the probability threshold.</span>
       </div>
       <div class="how-step branch">
         <div class="how-num">7</div>
         <b>Irrigate now or delay</b>
-        <span>If no forecast qualifies, CLOVER irrigates like Baseline. If a forecast qualifies, CLOVER delays irrigation — unless SWD has reached the forced-irrigation limit, set 20 mm drier than the trigger.</span>
+        <span>CLOVER balances the current SWD against the forecast. If no forecast qualifies, it irrigates like Baseline. If rain qualifies, it can delay — unless SWD reaches the forced-irrigation limit, set 20 mm drier than the trigger.</span>
       </div>
       <div class="how-step">
         <div class="how-num">8</div>
@@ -113,7 +113,7 @@
       <div class="how-step result">
         <div class="how-num">10</div>
         <b>Repeat and compare</b>
-        <span>The process repeats for all 45 days. We then compare effective rainfall, irrigation timing and volume, allocation use, water stress and the indicative yield response between Baseline and CLOVER.</span>
+        <span>The process repeats for all 45 days. We then compare the SWD trajectories, effective rainfall, irrigation timing and volume, allocation use, water stress and the indicative yield response between Baseline and CLOVER.</span>
       </div>
     </div>
 
@@ -125,12 +125,12 @@
       <div class="how-vs">VS</div>
       <div class="how-branch clover">
         <b>CLOVER decision at the same irrigation window</b>
-        <span>SWD ≥ trigger → cycle ready → allocation available → check forecast → <b>irrigate now or delay for qualifying rain</b>.</span>
+        <span><b>Current SWD</b> + cycle/allocation constraints + <b>short-term rainfall forecast</b> → <b>irrigate now or delay for qualifying rain</b>.</span>
       </div>
     </div>
 
     <div class="worked-example">
-      <b>Example:</b> SWD reaches 60 mm, so irrigation is due. The forecast says 25 mm of rain in the next 2 days at 80% probability. If the controls are set to <b>20 mm rainfall</b>, <b>70% probability</b> and a <b>3-day look-ahead</b>, that forecast qualifies. Baseline irrigates now; CLOVER waits. If the rain occurs, CLOVER may receive more effective rainfall because its soil profile had more room to store it. If the forecast does not verify and the soil becomes too dry, the forced-irrigation rule prevents indefinite delay.
+      <b>Example:</b> SWD reaches 60 mm, so irrigation is due. CLOVER knows the current soil-water deficit and also sees 25 mm of forecast rain in the next 2 days at 80% probability. If the controls are set to <b>20 mm rainfall</b>, <b>70% probability</b> and a <b>3-day look-ahead</b>, that forecast qualifies. Baseline irrigates now; CLOVER can wait. If the rain occurs, CLOVER may receive more effective rainfall because its soil profile had more room to store it. If the forecast does not verify and SWD becomes too high, the forced-irrigation rule prevents indefinite delay.
     </div>
 
     <div class="how-outcomes">
@@ -138,7 +138,7 @@
       <div class="how-outcome benchmark"><b>Non-limited benchmark pathway:</b> irrigation water is always available. Better timing can allow rainfall to replace some irrigation → fewer/lower irrigation applications → reduced pumping and water cost while yield remains similar.</div>
     </div>
 
-    <div class="slider-note"><b>Why a slider sometimes appears to do nothing:</b> rainfall and probability thresholds are decision gates. Changing 70% to 75%, for example, only changes the irrigation schedule if a forecast near that boundary occurs during a day when irrigation is actually due, the system is cycle-ready and water is available. The “Threshold response” box below shows how many forecasts qualify and how many intersect real irrigation decision windows.</div>
+    <div class="slider-note"><b>Why a slider sometimes appears to do nothing:</b> rainfall and probability thresholds are decision gates. Changing 70% to 75%, for example, only changes the irrigation schedule if a forecast near that boundary occurs during a day when SWD has created an irrigation decision window, the system is cycle-ready and water is available. The “Threshold response” box below shows how many forecasts qualify and how many intersect real irrigation decision windows.</div>
   </section>
 
   <div class="grid">
@@ -203,7 +203,7 @@
       </div>
 
       <div class="tiny-note">
-        <b>Forecast rule:</b> when irrigation is due, CLOVER checks the next few days. If forecast rain meets both the rainfall and probability thresholds, irrigation can be delayed. If the crop becomes too dry, irrigation is forced. Threshold changes only alter the schedule when they change a forecast signal during an irrigation decision window.
+        <b>CLOVER rule:</b> SWD first determines whether irrigation is needed. At that point CLOVER combines the current SWD with the short-term rainfall forecast. If forecast rain meets both rainfall and probability thresholds, irrigation can be delayed; if SWD becomes too high, irrigation is forced.
       </div>
     </aside>
 
@@ -256,12 +256,12 @@
 
       <section class="scenario-strip">
         <div class="panel scenario base">
-          <h3>Baseline — scheduling + automation, no forecast</h3>
-          <p>SWD is tracked and irrigation is triggered by the same crop-water rule, but future rainfall is not used in the irrigation decision.</p>
+          <h3>Baseline — SWD scheduling + automation, no forecast</h3>
+          <p>SWD is tracked and irrigation is triggered by the crop-water rule, but future rainfall is not used in the irrigation decision.</p>
         </div>
         <div class="panel scenario smart">
-          <h3>CLOVER — add short-term weather forecast</h3>
-          <p>Same irrigation system, crop demand and water availability. Only the forecast-informed decision rule changes.</p>
+          <h3>CLOVER — SWD + short-term weather forecast</h3>
+          <p>CLOVER uses the same SWD/crop-water state, irrigation system and water availability, then adds the rainfall forecast to decide whether to irrigate now or delay.</p>
         </div>
       </section>
 
@@ -275,10 +275,10 @@
 
       <section class="panel chart-panel">
         <div class="chart-head">
-          <h2>Simulated soil water deficit (SWD)</h2>
-          <span>Higher SWD = drier soil · irrigation trigger shown as dashed line</span>
+          <h2>Soil water deficit (SWD): Baseline vs CLOVER</h2>
+          <span>CLOVER SWD reflects forecast-informed irrigation delays · higher SWD = drier soil</span>
         </div>
-        <svg id="swdChart" class="chart" viewBox="0 0 1100 300" role="img" aria-label="Soil water deficit chart"></svg>
+        <svg id="swdChart" class="chart" viewBox="0 0 1100 300" role="img" aria-label="Baseline and CLOVER soil water deficit chart"></svg>
       </section>
 
       <section class="lower">
@@ -301,11 +301,11 @@
           <div class="chart-head"><h2>Steve's initial modelling structure</h2></div>
           <div class="logicbox">
             <strong>What is held constant</strong>
-            <p>Site, crop water demand, precision irrigation, scheduling, automation, weather and available irrigation water.</p>
+            <p>Site, crop water demand, precision irrigation, SWD tracking/scheduling, automation, weather and available irrigation water.</p>
           </div>
           <div class="logicbox">
-            <strong>What changes</strong>
-            <p>Baseline has no short-term forecast. CLOVER uses forecast rain amount × probability to modify irrigation timing.</p>
+            <strong>What CLOVER combines</strong>
+            <p>Current SWD/crop-water state + irrigation constraints + forecast rain amount × probability to modify irrigation timing.</p>
           </div>
           <div class="logicbox">
             <strong>Primary value under limited water</strong>
