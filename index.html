@@ -1,241 +1,158 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>CLOVER – Forecast-informed irrigation modelling demo</title>
-<link rel="stylesheet" href="style.css">
-<style>
-  .how-panel{margin:0 0 18px;padding:18px;background:#fff;border:1px solid #e0e9e4;border-radius:16px;box-shadow:0 8px 24px rgba(31,68,50,.08)}
-  .how-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:12px}
-  .how-title{font-size:16px;font-weight:700;margin:0 0 5px}
-  .how-intro{font-size:12px;line-height:1.55;color:#5f7369;margin:0;max-width:980px}
-  .how-key{font-size:10.5px;line-height:1.4;color:#486357;background:#eef6f2;border:1px solid #dcebe3;border-radius:9px;padding:8px 10px;white-space:nowrap}
-  .how-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
-  .how-step{position:relative;padding:12px 11px 11px 39px;background:#f7faf8;border:1px solid #e6ede9;border-radius:11px;min-height:118px}
-  .how-num{position:absolute;left:11px;top:12px;width:21px;height:21px;border-radius:50%;background:#2f8f63;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
-  .how-step b{display:block;font-size:11.5px;margin-bottom:4px;color:#274c3a}
-  .how-step span{display:block;font-size:10.3px;line-height:1.45;color:#65786e}
-  .how-step.branch{background:#f2f7fa;border-color:#deebf2}
-  .how-step.branch .how-num{background:#3e83b7}
-  .how-step.branch b{color:#315d78}
-  .how-step.result{background:#f6f3fa;border-color:#e9e0f1}
-  .how-step.result .how-num{background:#7a5b92}
-  .how-step.result b{color:#624578}
-  .how-decision{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin-top:12px}
-  .how-branch{padding:11px 12px;border-radius:10px;border:1px solid #e3ebe7;background:#fafcfb}
-  .how-branch.baseline{border-left:4px solid #889a91}
-  .how-branch.clover{border-left:4px solid #2f8f63}
-  .how-branch b{display:block;font-size:11.5px;margin-bottom:4px}
-  .how-branch span{font-size:10.5px;line-height:1.45;color:#63776e}
-  .how-vs{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#8a9a92}
-  .worked-example{margin-top:10px;padding:11px 12px;border-radius:10px;background:#fff9f1;border:1px solid #f0dfc7;color:#68553f;font-size:10.5px;line-height:1.5}
-  .worked-example b{color:#5c4630}
-  .how-outcomes{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-  .how-outcome{font-size:10.5px;line-height:1.45;padding:9px 10px;border-radius:9px;background:#eef6f2;color:#3e6250}
-  .how-outcome.benchmark{background:#edf4f8;color:#3f6177}
-  .slider-note{margin-top:9px;font-size:10.5px;line-height:1.45;color:#687b72;padding-top:9px;border-top:1px solid #edf1ef}
-  @media(max-width:1250px){.how-steps{grid-template-columns:repeat(3,1fr)}}
-  @media(max-width:900px){.how-head{display:block}.how-key{margin-top:8px;display:inline-block}.how-steps{grid-template-columns:1fr 1fr}.how-decision{grid-template-columns:1fr}.how-vs{padding:0}}
-  @media(max-width:600px){.how-steps,.how-outcomes{grid-template-columns:1fr}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CLOVER Farm Simulation</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 <div class="app">
-  <header class="header">
-    <div class="brand">
-      <div class="mark" aria-hidden="true">
-        <span class="leaf a"></span><span class="leaf b"></span><span class="leaf c"></span>
-      </div>
+  <header class="hero">
+    <div class="brand-row">
+      <div class="mark" aria-hidden="true"><span class="leaf a"></span><span class="leaf b"></span><span class="leaf c"></span></div>
       <div>
-        <h1>CLOVER irrigation decision demonstrator</h1>
-        <div class="subtitle">Initial modelling concept · soil water deficit + short-term forecast + scheduling + automation</div>
+        <h1>CLOVER farm irrigation demonstrator</h1>
+        <p>From one forecast decision to a full multi‑IMU farm simulation</p>
       </div>
+      <div class="hero-badge" id="heroBadge">Level 1 · Tablelands CP</div>
     </div>
-    <div class="badge" id="headerBadge">Tablelands · Centre Pivot · synthetic weather</div>
+    <nav class="level-tabs" aria-label="CLOVER demonstration levels">
+      <button class="level-tab active" data-level="1"><span>1</span><b>Understand</b><small>Forecast decision</small></button>
+      <button class="level-tab" data-level="2"><span>2</span><b>Evidence</b><small>IrrigWeb example</small></button>
+      <button class="level-tab" data-level="3"><span>3</span><b>Farmer value</b><small>Water available / limited</small></button>
+      <button class="level-tab" data-level="4"><span>4</span><b>Farm systems</b><small>CP / LM / traveller / furrow</small></button>
+      <button class="level-tab" data-level="5"><span>5</span><b>Full CLOVER</b><small>Capacity + priority</small></button>
+    </nav>
   </header>
 
-  <section class="panel farm-panel">
-    <div class="farm-head">
-      <div>
-        <div class="eyebrow">Farm scenario layer</div>
-        <h2 id="scenarioName">Tablelands — Centre Pivot</h2>
-        <p id="scenarioSummary"></p>
-      </div>
-      <div class="preset-control">
-        <label for="scenarioPreset">Scenario preset</label>
-        <select id="scenarioPreset">
-          <option value="tablelands_cp" selected>Tablelands — Centre Pivot</option>
-          <option value="tablelands_lm">Tablelands — Lateral Move</option>
-          <option value="mackay_cp">Mackay / Eton — CP IrrigWeb test</option>
-          <option value="custom">Customised settings</option>
-        </select>
-      </div>
+  <section class="level-intro panel">
+    <div>
+      <div class="eyebrow" id="levelEyebrow">LEVEL 1 — UNDERSTAND CLOVER</div>
+      <h2 id="levelTitle">See exactly what the forecast changes</h2>
+      <p id="levelText"></p>
     </div>
+    <div class="level-question" id="levelQuestion"></div>
+  </section>
 
-    <div class="farm-grid">
-      <div class="map-card">
-        <div class="map-title-row">
-          <div>
-            <div class="eyebrow">Regional context</div>
-            <strong id="mapRegionTitle">Atherton Tablelands</strong>
-          </div>
-          <a id="mapOpenLink" class="map-open" href="#" target="_blank" rel="noopener">Open in Google Maps</a>
-        </div>
-        <iframe id="farmMap" class="farm-map" title="Google map of CLOVER farm scenario region" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        <div class="region-tabs" aria-label="Workbook regions">
-          <button type="button" class="region-tab active" data-region="tablelands">Tablelands</button>
-          <button type="button" class="region-tab" data-region="mackay">Mackay</button>
-          <button type="button" class="region-tab" data-region="bundaberg">Bundaberg</button>
-          <button type="button" class="region-tab" data-region="burdekin">Burdekin</button>
-        </div>
-        <div class="map-caption" id="mapCaption"></div>
-        <div class="map-note">Map pins are regional context only — not actual farm coordinates.</div>
-      </div>
+  <section id="evidencePanel" class="panel evidence-panel hidden">
+    <div class="section-head">
+      <div><div class="eyebrow">STEVE'S IRRIGWEB TEST — WORKBOOK RESULT</div><h2>Forecast ON vs forecast OFF</h2></div>
+      <div class="source-pill">Actual workbook result · not generated by this web model</div>
+    </div>
+    <div class="evidence-grid" id="evidenceGrid"></div>
+    <div class="evidence-summary" id="evidenceSummary"></div>
+  </section>
 
-      <div class="farm-layout-card">
-        <div class="layout-title-row">
-          <div>
-            <div class="eyebrow">Farm layout</div>
-            <strong id="layoutTitle">4 IMUs · Centre Pivot</strong>
-          </div>
-          <span class="workbook-tag">Steve's Farm Scenarios workbook</span>
-        </div>
-        <div class="imu-layout" id="imuLayout"></div>
-        <div class="scenario-facts" id="scenarioFacts"></div>
-        <div class="benchmark-box" id="benchmarkBox"></div>
-      </div>
+  <section id="valuePanel" class="panel value-panel hidden">
+    <div class="section-head">
+      <div><div class="eyebrow">CHOOSE THE FARMER PROBLEM</div><h2>What value are we trying to show?</h2></div>
+    </div>
+    <div class="value-switch">
+      <button class="value-card active" data-value="nonlimited"><b>Water is available</b><span>Can forecast rainfall replace irrigation and reduce pumping/water cost?</span></button>
+      <button class="value-card" data-value="limited"><b>Water is limited</b><span>Can forecast rainfall make a limited allocation last longer and reduce crop stress?</span></button>
     </div>
   </section>
 
-  <section class="how-panel">
-    <div class="how-head">
-      <div>
-        <div class="how-title">How the demonstration works — step by step</div>
-        <p class="how-intro">Two simulations are run side-by-side for the same 45-day period. <b>Baseline</b> and <b>CLOVER</b> have the same site, crop water demand, realised weather, irrigation system and available water. The experiment isolates one change: <b>CLOVER uses soil water deficit together with the short-term rainfall forecast when deciding whether to irrigate now or wait.</b></p>
-      </div>
-      <div class="how-key">CLOVER decision inputs:<br><b>SWD + forecast + irrigation constraints</b></div>
+  <section id="systemsPanel" class="panel systems-panel hidden">
+    <div class="section-head">
+      <div><div class="eyebrow">STEVE'S FARM SETUPS</div><h2>Select an irrigation system</h2></div>
+      <div class="source-pill">Workbook assumptions loaded into the simulator</div>
     </div>
-
-    <div class="how-steps">
-      <div class="how-step"><div class="how-num">1</div><b>Set the farm scenario</b><span>Select Centre Pivot (CP) or Lateral Move (LM). This sets the physical irrigation assumptions, including minimum irrigation cycle, application capacity, efficiency and system configuration.</span></div>
-      <div class="how-step"><div class="how-num">2</div><b>Set water availability</b><span>For the drought scenario, both strategies receive the same finite allocation. For the non-limited benchmark, irrigation water is not capped. This lets us test two different value pathways.</span></div>
-      <div class="how-step"><div class="how-num">3</div><b>Track soil water deficit</b><span>The crop uses water each day. The daily crop-water-demand value increases soil water deficit (SWD). Higher SWD means the soil profile is becoming drier and the crop is closer to needing irrigation.</span></div>
-      <div class="how-step"><div class="how-num">4</div><b>Ask: is irrigation due?</b><span>If SWD is below the selected trigger, neither strategy irrigates. If SWD reaches the trigger, the model checks whether the CP/LM minimum cycle has elapsed and whether allocation is still available.</span></div>
-      <div class="how-step branch"><div class="how-num">5</div><b>Baseline makes its decision</b><span>If irrigation is due, the system is cycle-ready and water is available, Baseline irrigates. It does not know that rain may arrive tomorrow or several days later.</span></div>
-      <div class="how-step branch"><div class="how-num">6</div><b>CLOVER combines SWD + forecast</b><span>CLOVER first uses SWD to determine that irrigation is needed. It then searches the selected look-ahead period. A forecast only qualifies when <b>both</b> forecast rainfall ≥ the rain threshold and probability ≥ the probability threshold.</span></div>
-      <div class="how-step branch"><div class="how-num">7</div><b>Irrigate now or delay</b><span>If no forecast qualifies, CLOVER irrigates like Baseline. If a forecast qualifies, CLOVER delays irrigation — unless SWD has reached the forced-irrigation limit, set 20 mm drier than the trigger.</span></div>
-      <div class="how-step"><div class="how-num">8</div><b>Apply irrigation, then actual rain</b><span>Any irrigation chosen for that day reduces SWD. The same <b>realised rainfall</b> is then applied to both simulations. Rain that fills an existing soil-water deficit counts as effective rainfall; excess is treated as rain loss.</span></div>
-      <div class="how-step"><div class="how-num">9</div><b>Track stress and crop response</b><span>If SWD becomes very high, a water-stress index accumulates. The current demo converts accumulated stress into an illustrative cane-yield response. This is a proxy, not an APSIM result.</span></div>
-      <div class="how-step result"><div class="how-num">10</div><b>Repeat and compare</b><span>The process repeats for all 45 days. We then compare effective rainfall, irrigation timing and volume, allocation use, water stress and the indicative yield response between Baseline and CLOVER.</span></div>
-    </div>
-
-    <div class="how-decision">
-      <div class="how-branch baseline"><b>Baseline decision at an irrigation window</b><span>SWD ≥ trigger → CP/LM cycle ready → allocation available → <b>irrigate now</b>.</span></div>
-      <div class="how-vs">VS</div>
-      <div class="how-branch clover"><b>CLOVER decision at the same irrigation window</b><span><b>SWD shows irrigation is needed</b> → cycle ready → allocation available → check forecast → <b>irrigate now or delay for qualifying rain</b>.</span></div>
-    </div>
-
-    <div class="worked-example"><b>Example:</b> SWD reaches 60 mm, so irrigation is due. The forecast says 25 mm of rain in the next 2 days at 80% probability. If the controls are set to <b>20 mm rainfall</b>, <b>70% probability</b> and a <b>3-day look-ahead</b>, that forecast qualifies. Baseline irrigates now; CLOVER waits. If the rain occurs, CLOVER may receive more effective rainfall because its soil profile had more room to store it. If the forecast does not verify and the soil becomes too dry, the forced-irrigation rule prevents indefinite delay.</div>
-
-    <div class="how-outcomes">
-      <div class="how-outcome"><b>Limited water / drought pathway:</b> both strategies have the same finite irrigation allocation. Better timing can increase effective rainfall and leave scarce irrigation available for later crop demand → less stress → potential TCH/TSH protection.</div>
-      <div class="how-outcome benchmark"><b>Non-limited benchmark pathway:</b> irrigation water is always available. Better timing can allow rainfall to replace some irrigation → fewer/lower irrigation applications → reduced pumping and water cost while yield remains similar.</div>
-    </div>
-
-    <div class="slider-note"><b>Why a slider sometimes appears to do nothing:</b> rainfall and probability thresholds are decision gates. Changing 70% to 75%, for example, only changes the irrigation schedule if a forecast near that boundary occurs during a day when irrigation is actually due, the system is cycle-ready and water is available. The “Threshold response” box below shows how many forecasts qualify and how many intersect real irrigation decision windows.</div>
+    <div class="system-picker" id="systemPicker"></div>
   </section>
 
-  <div class="grid">
+  <section id="priorityPanel" class="panel priority-panel hidden">
+    <div class="section-head">
+      <div><div class="eyebrow">FULL CLOVER — WHEN MORE THAN ONE IMU NEEDS WATER</div><h2>How should the available irrigation slot be allocated?</h2></div>
+    </div>
+    <div class="priority-controls">
+      <label>Farm system<select id="priorityScenario"><option value="tablelands_cp">Tablelands CP</option><option value="tablelands_lm">Tablelands LM</option><option value="mackay_traveller">Mackay traveller</option></select></label>
+      <label>Priority rule<select id="priorityRule"><option value="fixed">Fixed IMU order</option><option value="cropAge">Crop age</option><option value="swd">Highest SWD</option><option value="stress">Highest accumulated stress</option></select></label>
+    </div>
+    <p class="priority-note">Priority rules are part of the demonstration logic, not values specified in Steve's workbook. The workbook provides the IMU layouts and hydraulic constraints; this level tests how CLOVER could manage competing demand within them.</p>
+  </section>
+
+  <section class="workspace">
     <aside class="panel controls">
-      <h2>Fine-tune selected scenario</h2><div class="controls-note">Choose a farm preset above first. These controls then let us test sensitivity around the workbook assumptions.</div>
-
-      <div class="control"><label><span>Irrigation system</span></label><select id="system"><option value="cp">Centre Pivot (CP)</option><option value="lm">Lateral Move (LM)</option></select></div>
-      <div class="control"><label><span>Water availability</span></label><select id="allocationMode"><option value="limited" selected>Limited — drought scenario</option><option value="unlimited">Non-limited — benchmark</option></select></div>
-      <div class="control" id="allocationControl"><label><span>Available irrigation in demo window</span><span class="value"><span id="allocationV">120</span> mm</span></label><input id="allocation" type="range" min="60" max="240" step="20" value="120"><div class="subvalue"><span id="allocationML">1.20</span> ML/ha</div></div>
-      <div class="control"><label><span>SWD irrigation trigger</span><span class="value"><span id="triggerV">60</span> mm</span></label><input id="trigger" type="range" min="40" max="80" step="5" value="60"></div>
-      <div class="control"><label><span>Net irrigation target</span><span class="value"><span id="irrV">40</span> mm</span></label><input id="irrAmount" type="range" min="20" max="60" step="0.1" value="32.3"></div>
-      <div class="control"><label><span>Forecast rain threshold</span><span class="value"><span id="rainV">20</span> mm</span></label><input id="rainThreshold" type="range" min="5" max="40" step="5" value="20"></div>
-      <div class="control"><label><span>Probability threshold</span><span class="value"><span id="probV">70</span>%</span></label><input id="probThreshold" type="range" min="40" max="90" step="5" value="70"></div>
-      <div class="control"><label><span>Forecast look-ahead</span><span class="value"><span id="lookV">3</span> days</span></label><input id="lookahead" type="range" min="1" max="7" step="1" value="3"></div>
-      <div class="btnrow single"><button class="secondary" id="randomBtn">New random weather</button></div>
-      <div class="signal-box"><div class="signal-title">Threshold response</div><div><strong id="signalCount">–</strong></div><div class="signal-detail" id="decisionSensitivity">–</div></div>
-      <div class="tiny-note"><b>Forecast rule:</b> CLOVER first uses <b>soil water deficit</b> to determine whether irrigation is needed. It then checks the next few days. If forecast rain meets both the rainfall and probability thresholds, irrigation can be delayed. If the crop becomes too dry, irrigation is forced.</div>
+      <div class="section-head compact"><div><div class="eyebrow">SIMULATION SETTINGS</div><h2 id="scenarioName">Tablelands — Centre Pivot</h2></div></div>
+      <p class="controls-summary" id="scenarioSummary"></p>
+      <div class="control-group">
+        <label><span>SWD irrigation trigger</span><b><span id="triggerV">60</span> mm</b></label>
+        <input id="trigger" type="range" min="40" max="90" step="5" value="60" />
+      </div>
+      <div class="control-group">
+        <label><span>Forecast rain threshold</span><b><span id="rainV">20</span> mm</b></label>
+        <input id="rainThreshold" type="range" min="5" max="40" step="5" value="20" />
+      </div>
+      <div class="control-group">
+        <label><span>Probability threshold</span><b><span id="probV">70</span>%</b></label>
+        <input id="probThreshold" type="range" min="40" max="90" step="5" value="70" />
+      </div>
+      <div class="control-group">
+        <label><span>Forecast look-ahead</span><b><span id="lookV">3</span> days</b></label>
+        <input id="lookahead" type="range" min="1" max="7" step="1" value="3" />
+      </div>
+      <div class="control-group" id="allocationGroup">
+        <label><span>Available irrigation allocation</span><b><span id="allocationV">3.0</span> ML/ha</b></label>
+        <input id="allocation" type="range" min="1" max="8" step="0.25" value="3" />
+      </div>
+      <button id="newWeather" class="primary-btn">New synthetic weather</button>
+      <div class="assumption-box"><b>Model boundary</b><span>Rainfall, forecast probability and daily crop water demand are synthetic. Crop-class demand factors are demonstration assumptions. IMU layouts, areas and irrigation-system constraints come from Steve's workbook.</span></div>
     </aside>
 
-    <main class="main">
-      <section class="panel context">
-        <div class="context-main">
-          <div class="eyebrow">Modelling site</div>
-          <div class="context-title" id="contextTitle">Atherton Tablelands · precision irrigation · moderate/high PAW soil</div>
-          <div class="context-sub" id="contextSub">CoP participation can remain multi-region; this modelling scenario is attached to a specific site context.</div>
+    <main class="content">
+      <section class="panel scenario-panel">
+        <div class="scenario-top">
+          <div>
+            <div class="eyebrow">SELECTED FARM SCENARIO</div>
+            <h2 id="scenarioHeading">Tablelands — Centre Pivot</h2>
+            <p id="scenarioDetail"></p>
+          </div>
+          <div class="scenario-actions"><span id="waterTag" class="status-tag"></span><span id="systemTag" class="status-tag alt"></span></div>
         </div>
-        <div class="system-facts" id="systemFacts"></div>
-      </section>
-
-      <section class="panel pathway" id="pathwayPanel">
-        <div>
-          <div class="eyebrow" id="pathwayEyebrow">Drought / limited-water pathway</div>
-          <h2 id="pathwayTitle">Use forecast rainfall to make scarce irrigation water work harder</h2>
-          <p id="pathwayText"></p>
-        </div>
-        <div class="pathway-flow" id="pathwayFlow"></div>
-      </section>
-
-      <section class="kpis">
-        <div class="panel kpi"><div class="label" id="kpi1Label">Effective rainfall gain</div><div class="big" id="kpi1">–</div><div class="delta" id="kpi1D">–</div></div>
-        <div class="panel kpi"><div class="label" id="kpi2Label">Water-stress reduction</div><div class="big" id="kpi2">–</div><div class="delta" id="kpi2D">–</div></div>
-        <div class="panel kpi"><div class="label" id="kpi3Label">Yield effect</div><div class="big" id="kpi3">–</div><div class="delta" id="kpi3D">–</div></div>
-        <div class="panel kpi"><div class="label" id="kpi4Label">Allocation used</div><div class="big" id="kpi4">–</div><div class="delta" id="kpi4D">–</div></div>
-        <div class="panel kpi"><div class="label" id="kpi5Label">Irrigation decisions changed</div><div class="big" id="kpi5">–</div><div class="delta" id="kpi5D">–</div></div>
-      </section>
-
-      <section class="scenario-strip">
-        <div class="panel scenario base"><h3>Baseline — scheduling + automation, no forecast</h3><p>SWD is tracked and irrigation is triggered by the same crop-water rule, but future rainfall is not used in the irrigation decision.</p></div>
-        <div class="panel scenario smart"><h3>CLOVER — SWD + short-term weather forecast</h3><p>Same irrigation system, crop demand and water availability. CLOVER uses soil-water status first, then adds the forecast-informed decision rule.</p></div>
-      </section>
-
-      <section class="panel chart-panel">
-        <div class="chart-head"><h2>Forecast rainfall and realised rainfall</h2><span>45-day synthetic demonstration</span></div>
-        <svg id="rainChart" class="chart" viewBox="0 0 1100 300" role="img" aria-label="Rainfall forecast and realised rainfall chart"></svg>
-      </section>
-
-      <section class="panel chart-panel">
-        <div class="chart-head"><h2>Rain probability</h2><span>Probability line shown separately with threshold</span></div>
-        <svg id="probChart" class="chart" viewBox="0 0 1100 250" role="img" aria-label="Rain probability chart"></svg>
-      </section>
-
-      <section class="panel chart-panel">
-        <div class="chart-head"><h2>Baseline and CLOVER irrigation timing</h2><span>Separate view to reduce crowding</span></div>
-        <svg id="irrigationChart" class="chart" viewBox="0 0 1100 250" role="img" aria-label="Irrigation timing chart"></svg>
-      </section>
-
-      <section class="panel chart-panel">
-        <div class="chart-head"><h2>Soil water deficit (SWD): Baseline vs CLOVER</h2><span>Higher SWD = drier soil · irrigation trigger shown as dashed line</span></div>
-        <svg id="swdChart" class="chart" viewBox="0 0 1100 300" role="img" aria-label="Soil water deficit chart"></svg>
-      </section>
-
-      <section class="lower">
-        <div class="panel chart-panel">
-          <div class="chart-head"><h2>Decision timeline</h2><span id="decisionCount"></span></div>
-          <svg id="decisionChart" class="chart" viewBox="0 0 1100 430" role="img" aria-label="Decision timeline chart"></svg>
-        </div>
-
-        <div class="panel logic">
-          <div class="chart-head"><h2>Steve's initial modelling structure</h2></div>
-          <div class="logicbox"><strong>What is held constant</strong><p>Site, crop water demand, precision irrigation, scheduling, automation, weather and available irrigation water.</p></div>
-          <div class="logicbox"><strong>What changes</strong><p>Baseline has no short-term forecast. CLOVER uses forecast rain amount × probability to modify irrigation timing.</p></div>
-          <div class="logicbox"><strong>Primary value under limited water</strong><p>More effective rain can support greater crop water use and reduce water stress, potentially increasing TCH/TSH.</p></div>
-          <div class="logicbox"><strong>Primary value when water is non-limiting</strong><p>More effective rain can lower irrigation demand and therefore reduce water and pumping cost while maintaining yield.</p></div>
-          <div class="source-note">CP/LM system assumptions are adapted from Steve's revised Farm Scenarios workbook. The soil-water and yield calculations remain illustrative rather than APSIM outputs.</div>
+        <div class="scenario-body">
+          <div class="map-card">
+            <div class="map-head"><b id="mapTitle">Atherton Tablelands</b><a id="mapLink" href="#" target="_blank" rel="noopener">Open Google Maps</a></div>
+            <iframe id="farmMap" title="Regional Google map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <small>Regional context only — not an actual farm coordinate.</small>
+          </div>
+          <div class="facts-card"><div class="facts-grid" id="factsGrid"></div><div class="workbook-note" id="workbookNote"></div></div>
         </div>
       </section>
 
-      <footer>Demonstration only. Synthetic weather and a simplified daily soil-water/yield proxy are used to test CLOVER decision logic; this is not an APSIM model result.</footer>
+      <section class="panel farm-panel">
+        <div class="section-head"><div><div class="eyebrow">ACTUAL IMU LAYOUT USED IN THIS DEMO</div><h2 id="farmLayoutTitle">CP1 · Harvest Year 1</h2></div><div class="legend"><span class="dot base"></span>Baseline <span class="dot clover"></span>CLOVER</div></div>
+        <div class="imu-grid" id="imuGrid"></div>
+        <div class="farm-caption" id="farmCaption"></div>
+      </section>
+
+      <section class="kpi-grid" id="kpiGrid"></section>
+
+      <section class="panel chart-panel">
+        <div class="section-head"><div><div class="eyebrow">SAME WEATHER FOR BOTH STRATEGIES</div><h2>Forecast and realised rainfall</h2></div><span class="chart-note">45-day synthetic window</span></div>
+        <svg id="rainChart" class="chart" viewBox="0 0 1100 280"></svg>
+      </section>
+
+      <section class="panel chart-panel">
+        <div class="section-head"><div><div class="eyebrow">FARM RESPONSE</div><h2>Average soil water deficit — Baseline vs CLOVER</h2></div><span class="chart-note">Higher SWD = drier</span></div>
+        <svg id="swdChart" class="chart" viewBox="0 0 1100 280"></svg>
+      </section>
+
+      <section class="panel imu-results-panel">
+        <div class="section-head"><div><div class="eyebrow">IMU-BY-IMU RESULT</div><h2>Where does the difference come from?</h2></div></div>
+        <div class="results-wrap"><table><thead><tr><th>IMU</th><th>Crop</th><th>Area</th><th>Baseline irrigation</th><th>CLOVER irrigation</th><th>Difference</th><th>Effective rain gain</th><th>Stress change</th></tr></thead><tbody id="imuResults"></tbody></table></div>
+      </section>
+
+      <section id="queueSection" class="panel queue-panel hidden">
+        <div class="section-head"><div><div class="eyebrow">LEVEL 5 — CAPACITY CONSTRAINT</div><h2>Days when more than one IMU competed for the irrigation slot</h2></div><span id="queueCount" class="chart-note"></span></div>
+        <div class="queue-list" id="queueList"></div>
+      </section>
+
+      <footer>Demonstration only. The web model uses synthetic weather and simplified soil-water/crop-demand logic. Steve's workbook assumptions are used for farm geometry, IMU/crop layouts and irrigation-system constraints; the IrrigWeb benchmark in Level 2 is shown separately as a workbook result.</footer>
     </main>
-  </div>
+  </section>
 </div>
-
 <script src="app.js"></script>
 </body>
 </html>
