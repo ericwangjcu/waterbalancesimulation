@@ -52,8 +52,61 @@
         <div class="subtitle">Initial modelling concept · soil water deficit + short-term forecast + scheduling + automation</div>
       </div>
     </div>
-    <div class="badge">Atherton Tablelands modelling scenario · synthetic weather</div>
+    <div class="badge" id="headerBadge">Tablelands · Centre Pivot · synthetic weather</div>
   </header>
+
+  <section class="panel farm-panel">
+    <div class="farm-head">
+      <div>
+        <div class="eyebrow">Farm scenario layer</div>
+        <h2 id="scenarioName">Tablelands — Centre Pivot</h2>
+        <p id="scenarioSummary"></p>
+      </div>
+      <div class="preset-control">
+        <label for="scenarioPreset">Scenario preset</label>
+        <select id="scenarioPreset">
+          <option value="tablelands_cp" selected>Tablelands — Centre Pivot</option>
+          <option value="tablelands_lm">Tablelands — Lateral Move</option>
+          <option value="mackay_cp">Mackay / Eton — CP IrrigWeb test</option>
+          <option value="custom">Customised settings</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="farm-grid">
+      <div class="map-card">
+        <div class="map-title-row">
+          <div>
+            <div class="eyebrow">Regional context</div>
+            <strong id="mapRegionTitle">Atherton Tablelands</strong>
+          </div>
+          <a id="mapOpenLink" class="map-open" href="#" target="_blank" rel="noopener">Open in Google Maps</a>
+        </div>
+        <iframe id="farmMap" class="farm-map" title="Google map of CLOVER farm scenario region" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div class="region-tabs" aria-label="Workbook regions">
+          <button type="button" class="region-tab active" data-region="tablelands">Tablelands</button>
+          <button type="button" class="region-tab" data-region="mackay">Mackay</button>
+          <button type="button" class="region-tab" data-region="bundaberg">Bundaberg</button>
+          <button type="button" class="region-tab" data-region="burdekin">Burdekin</button>
+        </div>
+        <div class="map-caption" id="mapCaption"></div>
+        <div class="map-note">Map pins are regional context only — not actual farm coordinates.</div>
+      </div>
+
+      <div class="farm-layout-card">
+        <div class="layout-title-row">
+          <div>
+            <div class="eyebrow">Farm layout</div>
+            <strong id="layoutTitle">4 IMUs · Centre Pivot</strong>
+          </div>
+          <span class="workbook-tag">Steve's Farm Scenarios workbook</span>
+        </div>
+        <div class="imu-layout" id="imuLayout"></div>
+        <div class="scenario-facts" id="scenarioFacts"></div>
+        <div class="benchmark-box" id="benchmarkBox"></div>
+      </div>
+    </div>
+  </section>
 
   <section class="how-panel">
     <div class="how-head">
@@ -95,13 +148,13 @@
 
   <div class="grid">
     <aside class="panel controls">
-      <h2>Scenario controls</h2>
+      <h2>Fine-tune selected scenario</h2><div class="controls-note">Choose a farm preset above first. These controls then let us test sensitivity around the workbook assumptions.</div>
 
       <div class="control"><label><span>Irrigation system</span></label><select id="system"><option value="cp">Centre Pivot (CP)</option><option value="lm">Lateral Move (LM)</option></select></div>
       <div class="control"><label><span>Water availability</span></label><select id="allocationMode"><option value="limited" selected>Limited — drought scenario</option><option value="unlimited">Non-limited — benchmark</option></select></div>
       <div class="control" id="allocationControl"><label><span>Available irrigation in demo window</span><span class="value"><span id="allocationV">120</span> mm</span></label><input id="allocation" type="range" min="60" max="240" step="20" value="120"><div class="subvalue"><span id="allocationML">1.20</span> ML/ha</div></div>
       <div class="control"><label><span>SWD irrigation trigger</span><span class="value"><span id="triggerV">60</span> mm</span></label><input id="trigger" type="range" min="40" max="80" step="5" value="60"></div>
-      <div class="control"><label><span>Net irrigation target</span><span class="value"><span id="irrV">40</span> mm</span></label><input id="irrAmount" type="range" min="20" max="40" step="5" value="40"></div>
+      <div class="control"><label><span>Net irrigation target</span><span class="value"><span id="irrV">40</span> mm</span></label><input id="irrAmount" type="range" min="20" max="60" step="0.1" value="32.3"></div>
       <div class="control"><label><span>Forecast rain threshold</span><span class="value"><span id="rainV">20</span> mm</span></label><input id="rainThreshold" type="range" min="5" max="40" step="5" value="20"></div>
       <div class="control"><label><span>Probability threshold</span><span class="value"><span id="probV">70</span>%</span></label><input id="probThreshold" type="range" min="40" max="90" step="5" value="70"></div>
       <div class="control"><label><span>Forecast look-ahead</span><span class="value"><span id="lookV">3</span> days</span></label><input id="lookahead" type="range" min="1" max="7" step="1" value="3"></div>
@@ -114,8 +167,8 @@
       <section class="panel context">
         <div class="context-main">
           <div class="eyebrow">Modelling site</div>
-          <div class="context-title">Atherton Tablelands · precision irrigation · moderate/high PAW soil</div>
-          <div class="context-sub">CoP participation can remain multi-region; this modelling scenario is attached to a specific site context.</div>
+          <div class="context-title" id="contextTitle">Atherton Tablelands · precision irrigation · moderate/high PAW soil</div>
+          <div class="context-sub" id="contextSub">CoP participation can remain multi-region; this modelling scenario is attached to a specific site context.</div>
         </div>
         <div class="system-facts" id="systemFacts"></div>
       </section>
