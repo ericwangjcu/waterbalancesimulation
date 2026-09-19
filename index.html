@@ -23,7 +23,7 @@
     <button class="level-tab active" data-level="1"><b>1</b><span>Understand CLOVER</span></button>
     <button class="level-tab" data-level="2"><b>2</b><span>Existing evidence</span></button>
     <button class="level-tab" data-level="3"><b>3</b><span>Farmer value</span></button>
-    <button class="level-tab" data-level="4"><b>4</b><span>Farm systems</span></button>
+    <button class="level-tab" data-level="4"><b>4</b><span>Farm scenarios</span></button>
     <button class="level-tab" data-level="5"><b>5</b><span>Full CLOVER farm</span></button>
   </nav>
 
@@ -97,10 +97,12 @@
       </div>
     </div>
     <div class="system-cards">
-      <button class="system-card active" data-scenario="tablelands_cp"><b>Centre Pivot</b><span>4 IMUs · 40 L/s · 32.3 mm net · 4-day cycle</span><small>Cleanest forecast demonstration</small></button>
-      <button class="system-card" data-scenario="tablelands_lm"><b>Lateral Move</b><span>6 IMUs · 50 L/s · 51.8 mm hydraulic net · 40 mm management cap · 6-day cycle</span><small>Operational timing + diesel story</small></button>
+      <button class="system-card active" data-scenario="tablelands_cp"><b>Tablelands Centre Pivot</b><span>4 IMUs · 40 L/s · 32.3 mm net · 4-day cycle</span><small>Cleanest forecast demonstration</small></button>
+      <button class="system-card" data-scenario="tablelands_lm"><b>Tablelands Lateral Move</b><span>6 IMUs · 50 L/s · 51.8 mm hydraulic net · 40 mm management cap · 6-day cycle</span><small>Operational timing + diesel story</small></button>
       <button class="system-card" data-scenario="mackay_traveller"><b>Mackay Traveller</b><span>11 IMUs · 30 L/s · 30.4 mm net · 11-day cycle</span><small>Limited-water / drought story</small></button>
-      <button class="system-card" data-scenario="furrow_9"><b>Furrow</b><span>9 IMUs · 55 L/s · 110.9 mm net</span><small>Broader applicability; cycle not specified in workbook</small></button>
+      <button class="system-card" data-scenario="bundaberg_traveller"><b>Bundaberg Traveller</b><span>11 IMUs · 30 L/s · 30.4 mm net · 11-day cycle</span><small>Regional comparison; water status still to confirm</small></button>
+      <button class="system-card" data-scenario="furrow_7"><b>Furrow — 7 IMUs</b><span>7 IMUs · 55 L/s · 110.9 mm net</span><small>30.0 ha workbook setup; cycle not specified</small></button>
+      <button class="system-card" data-scenario="furrow_9"><b>Furrow — 9 IMUs</b><span>9 IMUs · 55 L/s · 110.9 mm net</span><small>38.6 ha workbook setup; cycle not specified</small></button>
     </div>
   </section>
 
@@ -109,7 +111,7 @@
       <div>
         <div class="eyebrow">Level 5 — full CLOVER farm decision</div>
         <h2>When several IMUs need irrigation and one pump cannot service them all, which IMU goes first?</h2>
-        <p>This level uses Steve's 11-IMU Mackay traveller layout because a single traveller/pump creates an intuitive capacity constraint. CLOVER first decides whether irrigation should proceed or wait for forecast rain, then the priority rule chooses among eligible IMUs.</p>
+        <p>This level keeps Steve's 11-IMU Mackay traveller geometry and irrigation capacity because one traveller/pump creates an intuitive capacity constraint. We then place the CLOVER decision layer on top as a future-state demonstration: decide whether irrigation should proceed or wait for forecast rain, then choose among eligible IMUs.</p>
       </div>
       <div class="priority-control">
         <label for="priorityRule">Priority rule</label>
