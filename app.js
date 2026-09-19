@@ -10,9 +10,9 @@ const SCENARIOS={
   tablelands_cp:{
     label:'Tablelands — Centre Pivot',region:'tablelands',system:'Centre Pivot',code:'CP',energy:'Electric',pump:40,hours:24,
     totalArea:40.7150407905,areaEach:10.1787601976,net:32.3,hydraulicNet:32.2554,cycle:4,limited:false,
-    imus:[['IMU 1','F'],['IMU 2','P'],['IMU 3','1R'],['IMU 4','2R']],
+    imus:[['IMU 1','P'],['IMU 2','1R'],['IMU 3','2R'],['IMU 4','3R']],
     facts:[['40 L/s','Pump flow'],['40.7 ha','Total area'],['4','IMUs'],['10.18 ha','Area / IMU'],['32.3 mm','Net application'],['4 days','Minimum cycle']],
-    note:'Workbook source: one CP is divided into four equal quarters; each quarter is an IMU. IrrigWeb/APSIM determines SWD, trigger = 60 mm, fallow is not irrigated, and the management strategy says apply a maximum 40 mm per irrigation. The infrastructure calculation gives about 32.3 mm net for a 24 h run.'
+    note:'Workbook source: one CP is divided into four equal quarters; each quarter is an IMU. This page uses the CP Harvest Year 2 layout (P, 1R, 2R, 3R), so all four IMUs are active. IrrigWeb/APSIM determines SWD, trigger = 60 mm, and the management strategy says apply a maximum 40 mm per irrigation. The infrastructure calculation gives about 32.3 mm net for a 24 h run.'
   },
   mackay_cp:{
     label:'Mackay / Eton — CP IrrigWeb test',region:'mackay',system:'Centre Pivot',code:'CP',energy:'Electric',pump:40,hours:24,
@@ -41,6 +41,13 @@ const SCENARIOS={
     imus:[['IMU 1','F'],['IMU 2','F'],['IMU 3','P'],['IMU 4','P'],['IMU 5','1R'],['IMU 6','1R'],['IMU 7','2R'],['IMU 8','2R'],['IMU 9','3R'],['IMU 10','3R'],['IMU 11','4R']],
     facts:[['30 L/s','Pump flow'],['33.0 ha','Total area'],['11','IMUs'],['3.00 ha','Area / IMU'],['30.4 mm','Net application'],['11 days','Minimum cycle']],
     note:'Workbook farm setup: manual overhead traveller, fixed cycle and night-time irrigation. Steve notes separately that Bundaberg water availability still needs confirmation, so the web demo does not treat its water-limit status as validated.'
+  },
+  furrow_7:{
+    label:'Burdekin/Tablelands — Furrow (7 IMUs)',region:'burdekin',system:'Furrow',code:'FR',energy:'Not specified',pump:55,hours:24,
+    totalArea:30.00375,areaEach:4.28625,net:110.8661417,hydraulicNet:110.8661417,cycle:1,limited:false,cycleAssumption:true,
+    imus:[['IMU 1','P'],['IMU 2','P'],['IMU 3','1R'],['IMU 4','2R'],['IMU 5','3R'],['IMU 6','4R'],['IMU 7','F']],
+    facts:[['55 L/s','Pump flow'],['30.00 ha','Total area'],['7','IMUs'],['4.29 ha','Area / IMU'],['110.9 mm','Net application'],['Not set','Minimum cycle']],
+    note:'Workbook farm setup: 7 IMUs, 55 L/s pump, 24 h irrigation and fixed-cycle management. The workbook does not specify a minimum cycle time for furrow; the synthetic engine therefore allows irrigation whenever an IMU is due. That timing rule is a simulation assumption, not a workbook value.'
   },
   furrow_9:{
     label:'Burdekin/Tablelands — Furrow (9 IMUs)',region:'burdekin',system:'Furrow',code:'FR',energy:'Not specified',pump:55,hours:24,
@@ -166,7 +173,7 @@ function applyLevel(level){
   if(level===1)state.scenario='tablelands_cp';
   if(level===2)state.scenario='mackay_cp';
   if(level===3)state.scenario=state.valuePath==='limited'?'mackay_traveller':'tablelands_cp';
-  if(level===4&&!['tablelands_cp','tablelands_lm','mackay_traveller','furrow_9'].includes(state.scenario))state.scenario='tablelands_cp';
+  if(level===4&&!['tablelands_cp','tablelands_lm','mackay_traveller','bundaberg_traveller','furrow_7','furrow_9'].includes(state.scenario))state.scenario='tablelands_cp';
   if(level===5)state.scenario='mackay_traveller';
   render();
 }
