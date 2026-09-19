@@ -1,76 +1,276 @@
 (()=>{
-const N=45,$=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),fmt=(v,d=1)=>Number(v).toFixed(d);
-const cropFactor={F:.25,P:.90,'1R':1.00,'2R':1.05,'3R':1.02,'4R':.95};
-const cropRank={F:0,P:1,'1R':2,'2R':3,'3R':4,'4R':5};
+const $=id=>document.getElementById(id),N=45;
 const REGIONS={
- tablelands:{title:'Atherton Tablelands',query:'Atherton Tablelands Queensland Australia'},
- mackay:{title:'Mackay / Eton',query:'Eton Queensland Australia'},
- burdekin:{title:'Burdekin',query:'Burdekin Shire Queensland Australia'}
+  tablelands:{title:'Atherton Tablelands',query:'Atherton Tablelands Queensland Australia',caption:'Workbook context: irrigation water is non-limiting for the majority of sugarcane farmers. Limited cases are mainly associated with irrigation infrastructure that cannot meet peak demand.'},
+  mackay:{title:'Mackay / Eton',query:'Eton Queensland Australia',caption:'Workbook context: Mackay includes a significant rainfed component and limited-water situations; the notes cite about 3 ML/ha for Eton Irrigation Scheme and up to about 6 ML/ha around Proserpine/off-scheme sources.'},
+  bundaberg:{title:'Bundaberg',query:'Bundaberg Queensland Australia',caption:'Workbook context: Steve notes that Bundaberg may be similar to the Tablelands, but this still needs confirmation.'},
+  burdekin:{title:'Burdekin',query:'Burdekin Shire Queensland Australia',caption:'Workbook context: the notes treat Burdekin irrigation water as non-limiting.'}
 };
-const S={
- tablelands_cp:{name:'Tablelands — Centre Pivot',region:'tablelands',water:'unlimited',system:'Centre Pivot',code:'CP',pump:40,energy:'Electric',hours:24,cycle:4,application:32.2554,areaTotal:40.715,area:10.17876,scheduling:'IrrigWeb',automation:'Yes',trigger:60,allocation:null,layout:'CP1 · Harvest Year 1',crops:['F','P','1R','2R'],imuNames:['IMU 1','IMU 2','IMU 3','IMU 4'],summary:'One 40 L/s centre pivot divided into four equal-quarter IMUs. This is the cleanest Forecast OFF vs ON experiment.',detail:'Steve’s CP worksheet: 4 equal-quarter IMUs, 24 h per irrigation, 4-day minimum cycle, 95% application efficiency and about 32.3 mm net application.',note:'Workbook source: CP sheet. Fallow is not irrigated. The CP sheet tests Weather forecast = No vs Yes while IrrigWeb and automation remain Yes.'},
- mackay_cp:{name:'Mackay / Eton — CP IrrigWeb test',region:'mackay',water:'unlimited',system:'Centre Pivot',code:'CP',pump:40,energy:'Electric',hours:24,cycle:4,application:32.3,areaTotal:40.715,area:10.17876,scheduling:'IrrigWeb',automation:'Yes',trigger:60,allocation:null,layout:'Clover_Mky · 2021 crop classes',crops:['P','1R','2R','3R'],imuNames:['CP1_B1','CP1_B2','CP1_B3','CP1_B4'],summary:'Uses the same farm structure as Steve’s existing Mackay/Eton IrrigWeb Forecast Yes/No test.',detail:'Eton Sunwater met site, Black Earth PAW 170 mm, 4 CP IMUs, 34 mm gross / 32.3 mm net irrigation and 4-day minimum cycle.',note:'Workbook source: IrrigWeb test sheet. The benchmark results shown above are actual workbook values; this web simulation below still uses synthetic weather.'},
- tablelands_lm:{name:'Tablelands — Lateral Move',region:'tablelands',water:'unlimited',system:'Lateral Move',code:'LM',pump:50,energy:'Diesel',hours:24,cycle:6,application:40,hydraulicNet:51.818,areaTotal:47.52,area:7.92,scheduling:'IrrigWeb',automation:'Yes',trigger:60,allocation:null,layout:'LM · Harvest Year 1',crops:['F','P','1R','2R','3R','4R'],imuNames:['IMU 1','IMU 2','IMU 3','IMU 4','IMU 5','IMU 6'],summary:'Six IMUs under one 50 L/s lateral move. The longer 6-day cycle makes forecast timing more operationally important.',detail:'Steve’s LM worksheet: 6 IMUs, 24 h per irrigation, diesel energy, IrrigWeb scheduling and automation. Hydraulic net is about 51.8 mm, while the management strategy says apply a maximum 40 mm.',note:'Workbook source: LM sheet. Fallow is not irrigated. The 40 mm management target is used in this demo rather than the full 51.8 mm hydraulic capacity.'},
- mackay_traveller:{name:'Mackay — Overhead traveller',region:'mackay',water:'limited',system:'Overhead traveller',code:'Traveller',pump:30,energy:'Not specified',hours:13,cycle:11,application:30.4185,areaTotal:33.0016,area:3.00015,scheduling:'Fixed cycle',automation:'Manual',trigger:60,allocation:2.80786,layout:'11-IMU farm-layout example · Harvest Year 1',crops:['F','F','F','1R','1R','1R','1R','3R','3R','3R','3R'],imuNames:Array.from({length:11},(_,i)=>`IMU ${i+1}`),summary:'A genuinely water-limited Mackay case: 11 small IMUs, one 30 L/s traveller and about 2.81 ML/ha in the workbook setup.',detail:'Steve’s Farm set up sheet: 11 IMUs of about 3.0 ha, 13 h per irrigation, about 30.4 mm net per irrigation, 11-day cycle and night-time irrigation.',note:'Workbook source: Farm set up plus the 11-IMU Farm layouts example. Notes also describe about 3 ML/ha in the Eton Irrigation Scheme. Crop classes use the reduced-variation 11-IMU layout example.'},
- burdekin_furrow:{name:'Burdekin — Furrow',region:'burdekin',water:'unlimited',system:'Furrow',code:'Furrow',pump:55,energy:'Not specified',hours:24,cycle:7,cycleInferred:true,application:110.866,areaTotal:30.00375,area:4.28625,scheduling:'Fixed cycle',automation:'Manual',trigger:60,allocation:null,layout:'7-IMU hydraulic-group example · Harvest Year 1',crops:['F','F','F','F','1R','1R','1R'],imuNames:Array.from({length:7},(_,i)=>`IMU ${i+1}`),summary:'A broader-system example showing how the CLOVER logic may transfer beyond precision overhead irrigation.',detail:'Steve’s Farm set up sheet: 55 L/s furrow system, 7 IMUs of about 4.29 ha and about 110.9 mm net per irrigation.',note:'Workbook does not state a minimum cycle for furrow. This demo infers 7 days from 7 IMUs × 24 h per irrigation and labels that assumption explicitly.'}
+const SCENARIOS={
+  tablelands_cp:{
+    label:'Tablelands — Centre Pivot',region:'tablelands',system:'Centre Pivot',code:'CP',energy:'Electric',pump:40,hours:24,
+    totalArea:40.7150407905,areaEach:10.1787601976,net:32.3,hydraulicNet:32.2554,cycle:4,limited:false,
+    imus:[['IMU 1','F'],['IMU 2','P'],['IMU 3','1R'],['IMU 4','2R']],
+    facts:[['40 L/s','Pump flow'],['40.7 ha','Total area'],['4','IMUs'],['10.18 ha','Area / IMU'],['32.3 mm','Net application'],['4 days','Minimum cycle']],
+    note:'Workbook source: one CP is divided into four equal quarters; each quarter is an IMU. IrrigWeb/APSIM determines SWD, trigger = 60 mm, fallow is not irrigated, and the management strategy says apply a maximum 40 mm per irrigation. The infrastructure calculation gives about 32.3 mm net for a 24 h run.'
+  },
+  mackay_cp:{
+    label:'Mackay / Eton — CP IrrigWeb test',region:'mackay',system:'Centre Pivot',code:'CP',energy:'Electric',pump:40,hours:24,
+    totalArea:40.7150407905,areaEach:10.1787601976,net:32.3,hydraulicNet:32.3,cycle:4,limited:false,paw:170,
+    imus:[['CP1_B1','P'],['CP1_B2','1R'],['CP1_B3','2R'],['CP1_B4','3R']],
+    facts:[['Eton Sunwater','Met site'],['170 mm','PAW'],['4','IMUs'],['10.18 ha','Area / IMU'],['32.3 mm','Net application'],['4 days','Minimum cycle']],
+    note:'Workbook IrrigWeb test: Centre Pivot, irrigation allocation not limiting, Black Earth PAW 170 mm, rule CL_OH_4d_34mm, 34 mm typical gross application, 5% loss, 32.3 mm net and 4-day minimum cycle.'
+  },
+  tablelands_lm:{
+    label:'Tablelands — Lateral Move',region:'tablelands',system:'Lateral Move',code:'LM',energy:'Diesel',pump:50,hours:24,
+    totalArea:47.52,areaEach:7.92,net:40,hydraulicNet:51.8181818,cycle:6,limited:false,
+    imus:[['IMU 1','F'],['IMU 2','P'],['IMU 3','1R'],['IMU 4','2R'],['IMU 5','3R'],['IMU 6','4R']],
+    facts:[['50 L/s','Pump flow'],['47.52 ha','Total area'],['6','IMUs'],['7.92 ha','Area / IMU'],['51.8 mm','Hydraulic net'],['6 days','Minimum cycle']],
+    note:'Workbook source: 6 IMUs, 50 L/s pump, 24 h irrigation, diesel energy and IrrigWeb scheduling. The hydraulic calculation gives about 51.8 mm net, while Steve’s irrigation strategy says apply a maximum 40 mm per irrigation; this demo uses the 40 mm management cap.'
+  },
+  mackay_traveller:{
+    label:'Mackay — Overhead Traveller',region:'mackay',system:'Overhead Traveller',code:'TR',energy:'Not specified',pump:30,hours:13,
+    totalArea:33.0016104,areaEach:3.0001464,net:30.4185156,hydraulicNet:30.4185156,cycle:11,limited:true,annualAllocation:2.807862976,
+    imus:[['IMU 1','F'],['IMU 2','F'],['IMU 3','P'],['IMU 4','P'],['IMU 5','1R'],['IMU 6','1R'],['IMU 7','2R'],['IMU 8','2R'],['IMU 9','3R'],['IMU 10','3R'],['IMU 11','4R']],
+    facts:[['30 L/s','Pump flow'],['33.0 ha','Total area'],['11','IMUs'],['3.00 ha','Area / IMU'],['30.4 mm','Net application'],['11 days','Minimum cycle']],
+    note:'Workbook farm setup: manual overhead traveller, 13 h per irrigation, fixed cycle, night-time irrigation, 11 IMUs and about 2.81 ML/ha allocation in the farm-setup calculation. The 11 crop classes shown here follow Steve’s Overhead Traveller Harvest Year 1 layout.'
+  },
+  bundaberg_traveller:{
+    label:'Bundaberg — Overhead Traveller',region:'bundaberg',system:'Overhead Traveller',code:'TR',energy:'Not specified',pump:30,hours:13,
+    totalArea:33.0016104,areaEach:3.0001464,net:30.4185156,hydraulicNet:30.4185156,cycle:11,limited:false,annualAllocation:4.679771627,
+    imus:[['IMU 1','F'],['IMU 2','F'],['IMU 3','P'],['IMU 4','P'],['IMU 5','1R'],['IMU 6','1R'],['IMU 7','2R'],['IMU 8','2R'],['IMU 9','3R'],['IMU 10','3R'],['IMU 11','4R']],
+    facts:[['30 L/s','Pump flow'],['33.0 ha','Total area'],['11','IMUs'],['3.00 ha','Area / IMU'],['30.4 mm','Net application'],['11 days','Minimum cycle']],
+    note:'Workbook farm setup: manual overhead traveller, fixed cycle and night-time irrigation. Steve notes separately that Bundaberg water availability still needs confirmation, so the web demo does not treat its water-limit status as validated.'
+  },
+  furrow_9:{
+    label:'Burdekin/Tablelands — Furrow (9 IMUs)',region:'burdekin',system:'Furrow',code:'FR',energy:'Not specified',pump:55,hours:24,
+    totalArea:38.57625,areaEach:4.28625,net:110.8661417,hydraulicNet:110.8661417,cycle:1,limited:false,cycleAssumption:true,
+    imus:[['IMU 1','F'],['IMU 2','F'],['IMU 3','P'],['IMU 4','1R'],['IMU 5','1R'],['IMU 6','2R'],['IMU 7','3R'],['IMU 8','3R'],['IMU 9','4R']],
+    facts:[['55 L/s','Pump flow'],['38.58 ha','Total area'],['9','IMUs'],['4.29 ha','Area / IMU'],['110.9 mm','Net application'],['Not set','Minimum cycle']],
+    note:'Workbook farm setup: 9 IMUs, 55 L/s pump, 24 h irrigation and fixed-cycle management. The workbook does not specify a minimum cycle time for furrow; the synthetic engine therefore allows irrigation whenever an IMU is due. That timing rule is a simulation assumption, not a workbook value.'
+  }
 };
-const LEVELS={
- 1:{eye:'LEVEL 1 — UNDERSTAND CLOVER',title:'See exactly what the forecast changes',text:'Start with Steve’s simplest controlled CP setup. Baseline and CLOVER use the same IMUs, crop classes, pump, scheduling, automation and realised weather. Only CLOVER can delay an irrigation when a qualifying short-term rainfall forecast appears.',q:'Farmer question: “If useful rain is coming soon, can I safely wait instead of irrigating today?”'},
- 2:{eye:'LEVEL 2 — EXISTING EVIDENCE',title:'Connect the decision logic to Steve’s IrrigWeb example',text:'The top panel shows Steve’s actual Mackay/Eton workbook results. The simulator underneath uses the same 4-IMU setup but synthetic rainfall so we can watch how the decision develops day by day.',q:'Farmer question: “Has this kind of forecast decision already shown an irrigation saving in our modelling?”'},
- 3:{eye:'LEVEL 3 — FARMER VALUE',title:'Show the two different reasons a farmer might care',text:'Switch between a non-limited Tablelands CP and a limited-water Mackay traveller. The first emphasises irrigation/pumping avoided; the second emphasises preserving scarce allocation and reducing water stress.',q:'Two different stories: efficiency when water is available; resilience when water is limited.'},
- 4:{eye:'LEVEL 4 — FARM SYSTEMS',title:'Put the same CLOVER idea into different irrigation systems',text:'Compare Steve’s Centre Pivot, Lateral Move, overhead traveller and furrow setups. The IMU count, area, application depth and hydraulic cycle all change, so the same forecast can have a different practical consequence.',q:'Farmer question: “Does this still make sense for the irrigation system I actually use?”'},
- 5:{eye:'LEVEL 5 — FULL CLOVER',title:'Add pump capacity and decide which IMU goes first',text:'Now several IMUs can need water at the same time, but the farm has only one irrigation slot. CLOVER combines forecast delay with a selectable priority rule to decide which IMU receives that slot.',q:'Farm-management question: “When I cannot irrigate everything today, what should go first — and should any block wait for rain?”'}
+const CROP={
+  F:{factor:.35,start:20,priority:0,label:'Fallow'},
+  P:{factor:1.08,start:49,priority:6,label:'Plant'},
+  '1R':{factor:1.03,start:55,priority:5,label:'1R'},
+  '2R':{factor:.98,start:58,priority:4,label:'2R'},
+  '3R':{factor:.92,start:53,priority:3,label:'3R'},
+  '4R':{factor:.86,start:50,priority:2,label:'4R'}
 };
-const EVIDENCE=[
- {imu:'CP1_B1',crop:'P',yes:782,no:850,yYes:160,yNo:160,save:68,pct:8.0},
- {imu:'CP1_B2',crop:'1R',yes:496,no:578,yYes:118,yNo:119,save:82,pct:14.19},
- {imu:'CP1_B3',crop:'2R',yes:632,no:680,yYes:133,yNo:134,save:48,pct:7.06},
- {imu:'CP1_B4',crop:'3R',yes:502,no:612,yYes:130,yNo:131,save:110,pct:17.97}
-];
-let state={level:1,scenario:'tablelands_cp',value:'nonlimited',system:'tablelands_cp',priorityScenario:'tablelands_cp',priorityRule:'swd',seed:1056,weather:[]};
+let state={level:1,scenario:'tablelands_cp',valuePath:'nonlimited',seed:1056,weather:[],priority:'swd',allocation:120};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmt=(v,d=1)=>Number(v).toFixed(d);
+const date=i=>new Date(2026,8,7+i).toLocaleDateString('en-AU',{day:'2-digit',month:'short'});
 function rng(a){return()=>{let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 function gauss(r){let u=0,v=0;while(!u)u=r();while(!v)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
-function genWeather(){const r=rng(state.seed);state.weather=[];for(let i=0;i<N;i++){const event=r()<clamp(.15+.10*Math.sin((i+3)/5.2),.05,.29);let actual=event?Math.max(0,5+r()*27+gauss(r)*4):(r()<.08?r()*4:0);let fc=Math.max(0,actual*(.65+r()*.75)+gauss(r)*4.5);let prob=actual>5?52+r()*43:12+r()*53;if(r()<.1)prob=66+r()*28;if(actual>15&&r()<.1)prob=30+r()*30;state.weather.push({day:i,actual:+actual.toFixed(1),fc:+fc.toFixed(1),prob:Math.round(clamp(prob,5,95)),etc:+clamp(5.4+Math.sin(i/6)+gauss(r)*.7,3.6,7.4).toFixed(1)})}}
-function date(i){return new Date(2026,8,7+i).toLocaleDateString('en-AU',{day:'2-digit',month:'short'})}
-function forecastSignal(day,p){let best=null;for(let k=0;k<p.look;k++){const w=state.weather[day+k];if(!w)break;if(w.fc>=p.rain&&w.prob>=p.prob&&(!best||w.fc*w.prob>best.fc*best.prob))best={...w,ahead:k}}return best}
-function choose(cands,rule){if(!cands.length)return null;const copy=[...cands];if(rule==='fixed')return copy.sort((a,b)=>a.i-b.i)[0];if(rule==='cropAge')return copy.sort((a,b)=>cropRank[b.crop]-cropRank[a.crop]||b.swd-a.swd||a.i-b.i)[0];if(rule==='stress')return copy.sort((a,b)=>b.stress-a.stress||b.swd-a.swd||a.i-b.i)[0];return copy.sort((a,b)=>b.swd-a.swd||a.i-b.i)[0]}
-function params(sc){return{tr:+$('trigger').value,rain:+$('rainThreshold').value,prob:+$('probThreshold').value,look:+$('lookahead').value,force:+$('trigger').value+20,allocation:sc.water==='limited'?+$('allocation').value:Infinity}}
-function initialSwd(i,crop){if(crop==='F')return 28+(i%3)*3;return 40+((i*7+cropRank[crop]*3)%20)}
-function simulate(sc,smart,p,rule){
- const imus=sc.crops.map((crop,i)=>({i,name:sc.imuNames[i],crop,area:sc.area,swd:initialSwd(i,crop),last:-999,stress:0,irrig:0,effRain:0,effIrr:0,lossIrr:0,left:sc.water==='limited'?p.allocation*100:Infinity,changed:0}));
- const avg=[],events=[],queues=[];let farmIrrML=0,farmEffRainML=0;
- for(let d=0;d<N;d++){
-  const w=state.weather[d],sig=forecastSignal(d,p),due=[];
-  imus.forEach(m=>{m.swd+=w.etc*cropFactor[m.crop];if(m.crop!=='F'&&m.swd>=p.tr&&d-m.last>=sc.cycle&&m.left>.01)due.push(m)});
-  let candidates=due;
-  if(smart){candidates=due.filter(m=>!(sig&&m.swd<p.force));due.forEach(m=>{if(sig&&m.swd<p.force)m.changed++})}
-  const winner=choose(candidates,rule);
-  if(due.length>1)queues.push({day:d,due:due.map(m=>m.name),candidates:candidates.map(m=>m.name),winner:winner?.name||'None',sig,rule});
-  if(winner){const before=winner.swd,ap=Math.min(sc.application,winner.left);winner.irrig+=ap;winner.effIrr+=Math.min(ap,before);winner.lossIrr+=Math.max(0,ap-before);winner.swd=Math.max(0,before-ap);winner.last=d;if(isFinite(winner.left))winner.left-=ap;farmIrrML+=ap*winner.area*.01;events.push({day:d,imu:winner.name,type:'irrig',amount:ap})}
-  else if(smart&&due.length&&sig)events.push({day:d,imu:due.map(x=>x.name).join(', '),type:'delay',amount:0});
-  imus.forEach(m=>{const er=Math.min(w.actual,Math.max(0,m.swd));m.effRain+=er;m.swd=Math.max(0,m.swd-er);farmEffRainML+=er*m.area*.01;if(m.crop!=='F'&&m.swd>75)m.stress+=(m.swd-75)/25});
-  const active=imus.filter(m=>m.crop!=='F');avg.push({day:d,swd:active.length?active.reduce((a,m)=>a+m.swd,0)/active.length:0});
- }
- return{imus,avg,events,queues,farmIrrML,farmEffRainML,stress:imus.reduce((a,m)=>a+m.stress,0),leftMLha:sc.water==='limited'?imus.filter(m=>m.crop!=='F').reduce((a,m)=>a+m.left,0)/Math.max(1,imus.filter(m=>m.crop!=='F').length)/100:null};
+function genWeather(){
+  const r=rng(state.seed);state.weather=[];
+  for(let i=0;i<N;i++){
+    const wet=r()<clamp(.16+.11*Math.sin((i+4)/5.5),.05,.30);
+    const actual=wet?Math.max(0,5+r()*28+gauss(r)*4):(r()<.08?r()*4:0);
+    const fc=Math.max(0,actual*(.62+r()*.78)+gauss(r)*4.8);
+    let prob=actual>5?50+r()*45:12+r()*54;
+    if(r()<.1)prob=66+r()*28;if(actual>15&&r()<.1)prob=30+r()*30;
+    const etc=clamp(5.3+Math.sin(i/6)+gauss(r)*.65,3.5,7.2);
+    state.weather.push({day:i,actual:+actual.toFixed(1),fc:+fc.toFixed(1),prob:Math.round(clamp(prob,5,95)),etc:+etc.toFixed(1)});
+  }
 }
-function currentScenario(){if(state.level===1)return'tablelands_cp';if(state.level===2)return'mackay_cp';if(state.level===3)return state.value==='limited'?'mackay_traveller':'tablelands_cp';if(state.level===4)return state.system;return state.priorityScenario}
-function loadScenario(key){state.scenario=key;const sc=S[key];$('trigger').value=sc.trigger;$('allocation').value=sc.allocation??3;$('allocationGroup').classList.toggle('hidden',sc.water!=='limited');render()}
-function renderLevel(){const l=LEVELS[state.level];$('levelEyebrow').textContent=l.eye;$('levelTitle').textContent=l.title;$('levelText').textContent=l.text;$('levelQuestion').textContent=l.q;$('heroBadge').textContent=`Level ${state.level} · ${S[currentScenario()].name}`;document.querySelectorAll('.level-tab').forEach(b=>b.classList.toggle('active',+b.dataset.level===state.level));$('evidencePanel').classList.toggle('hidden',state.level!==2);$('valuePanel').classList.toggle('hidden',state.level!==3);$('systemsPanel').classList.toggle('hidden',state.level!==4);$('priorityPanel').classList.toggle('hidden',state.level!==5);$('queueSection').classList.toggle('hidden',state.level!==5)}
-function renderEvidence(){if($('evidenceGrid').children.length)return;$('evidenceGrid').innerHTML=EVIDENCE.map(e=>`<div class="evidence-item"><b>${e.imu} · ${e.crop}</b><span>Forecast OFF ${e.no} mm → ON ${e.yes} mm</span><div class="save">−${e.save} mm</div><span>${fmt(e.pct,1)}% less irrigation · Yield ${e.yNo} → ${e.yYes} t/ha</span></div>`).join('');$('evidenceSummary').innerHTML='<b>Workbook summary:</b> 31.35 ML total saved across the four IMUs, average 0.77 ML/ha, about 11.3% irrigation saving in the 2021 example. The workbook yields remain very similar between Forecast Yes and No.'}
-function renderSystemPicker(){const items=[['tablelands_cp','Centre Pivot','4 IMUs · 40 L/s · 4-day cycle'],['tablelands_lm','Lateral Move','6 IMUs · 50 L/s · 6-day cycle'],['mackay_traveller','Traveller','11 IMUs · 30 L/s · 11-day cycle'],['burdekin_furrow','Furrow','7 IMUs · 55 L/s · cycle inferred']];$('systemPicker').innerHTML=items.map(([k,n,s])=>`<button class="system-card ${state.system===k?'active':''}" data-system="${k}"><b>${n}</b><span>${S[k].name}</span><div class="mini">${s}</div></button>`).join('');document.querySelectorAll('.system-card').forEach(b=>b.onclick=()=>{state.system=b.dataset.system;loadScenario(state.system)})}
-function setMap(sc){const r=REGIONS[sc.region],q=encodeURIComponent(r.query);$('mapTitle').textContent=r.title;$('farmMap').src='https://www.google.com/maps?q='+q+'&output=embed';$('mapLink').href='https://www.google.com/maps/search/?api=1&query='+q}
-function renderScenario(sc){$('scenarioName').textContent=sc.name;$('scenarioSummary').textContent=sc.summary;$('scenarioHeading').textContent=sc.name;$('scenarioDetail').textContent=sc.detail;$('waterTag').textContent=sc.water==='limited'?'Limited water':'Water non-limiting';$('systemTag').textContent=`${sc.system} · ${sc.scheduling}`;$('farmLayoutTitle').textContent=sc.layout;setMap(sc);const facts=[[`${sc.pump} L/s`,'Pump flow'],[`${sc.crops.length}`,'IMUs'],[`${fmt(sc.area,2)} ha`,'Area / IMU'],[`${fmt(sc.application,1)} mm`,'Net target'],[`${sc.cycle} d${sc.cycleInferred?'*':''}`,'Cycle'],[`${sc.hours} h`,'Per irrigation'],[sc.energy,'Energy'],[sc.automation,'Automation'],[sc.water==='limited'?`${fmt(sc.allocation,2)} ML/ha`:'Unlimited','Allocation']];$('factsGrid').innerHTML=facts.map(x=>`<div class="fact"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');$('workbookNote').textContent=sc.note}
-function E(tag,a={},t=''){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);Object.entries(a).forEach(([k,v])=>e.setAttribute(k,v));if(t)e.textContent=t;return e}function clear(s){while(s.firstChild)s.removeChild(s.firstChild)}
-function dims(H,max,flip=false){const W=1100,L=48,R=18,T=22,B=38,pw=W-L-R,ph=H-T-B,x=i=>L+i*pw/(N-1),y=v=>flip?T+v/max*ph:T+ph-v/max*ph;return{W,H,L,R,T,B,pw,ph,x,y}}
-function grid(svg,d,max,label){for(let g=0;g<=5;g++){const v=max*g/5,y=d.y(v);svg.append(E('line',{x1:d.L,y1:y,x2:d.W-d.R,y2:y,class:'gridline'}));svg.append(E('text',{x:d.L-8,y:y+3,'text-anchor':'end',class:'axistext'},Math.round(v)))}svg.append(E('text',{x:8,y:15,class:'axistext'},label));for(let i=0;i<N;i+=5)svg.append(E('text',{x:d.x(i),y:d.H-10,'text-anchor':'middle',class:'axistext'},date(i)))}
-function path(vals,x,y){return vals.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')}
-function rainChart(p){const svg=$('rainChart');clear(svg);const m=Math.max(45,...state.weather.map(w=>Math.max(w.fc,w.actual))),d=dims(280,m),bw=Math.max(3,d.pw/N*.5);grid(svg,d,m,'mm');state.weather.forEach((w,i)=>{const q=w.fc>=p.rain&&w.prob>=p.prob;svg.append(E('rect',{x:d.x(i)-bw*.65,y:d.y(w.fc),width:bw*.55,height:d.y(0)-d.y(w.fc),rx:2,fill:q?'#8fc4a7':'#b9d6e9',opacity:.85}));svg.append(E('rect',{x:d.x(i),y:d.y(w.actual),width:bw*.55,height:d.y(0)-d.y(w.actual),rx:2,fill:'#3e83b7'}))});const y=d.y(p.rain);svg.append(E('line',{x1:d.L,y1:y,x2:d.W-d.R,y2:y,stroke:'#2f8f63','stroke-dasharray':'4 5'}));svg.append(E('text',{x:d.L+5,y:y-5,class:'axistext'},`forecast gate: ≥${p.rain} mm & ≥${p.prob}%`))}
-function swdChart(b,c,p){const svg=$('swdChart');clear(svg);const m=Math.max(110,p.force+20,...b.avg.map(r=>r.swd),...c.avg.map(r=>r.swd)),d=dims(280,m,true);grid(svg,d,m,'SWD mm');const tr=d.y(p.tr),fo=d.y(p.force);svg.append(E('line',{x1:d.L,y1:tr,x2:d.W-d.R,y2:tr,stroke:'#9eada5','stroke-dasharray':'6 5'}));svg.append(E('line',{x1:d.L,y1:fo,x2:d.W-d.R,y2:fo,stroke:'#d8a28d','stroke-dasharray':'3 5'}));svg.append(E('path',{d:path(b.avg.map(x=>x.swd),d.x,d.y),fill:'none',stroke:'#889a91','stroke-width':2.3}));svg.append(E('path',{d:path(c.avg.map(x=>x.swd),d.x,d.y),fill:'none',stroke:'#2f8f63','stroke-width':3}));svg.append(E('text',{x:770,y:17,class:'axistext'},'grey = Baseline farm average · green = CLOVER farm average'))}
-function renderImus(sc,b,c){const maxS=Math.max(100,...b.imus.map(x=>x.swd),...c.imus.map(x=>x.swd));$('imuGrid').style.gridTemplateColumns=`repeat(${Math.min(4,sc.crops.length)},minmax(0,1fr))`;$('imuGrid').innerHTML=b.imus.map((m,i)=>{const x=c.imus[i],f=m.crop==='F';return`<div class="imu-card ${f?'fallow':''}"><div class="head"><div><div class="name">${m.name}</div><div class="crop">${m.crop}</div></div><div class="area">${fmt(m.area,2)} ha</div></div><div class="swd-bars"><div class="swd-label"><span>Baseline SWD</span><span>${fmt(m.swd,0)} mm</span></div><div class="bar base"><i style="width:${clamp(m.swd/maxS*100,0,100)}%"></i></div><div class="swd-label"><span>CLOVER SWD</span><span>${fmt(x.swd,0)} mm</span></div><div class="bar clover"><i style="width:${clamp(x.swd/maxS*100,0,100)}%"></i></div></div><div class="imu-meta">Irrigation ${fmt(m.irrig,0)} → ${fmt(x.irrig,0)} mm${f?' · fallow not irrigated':''}</div></div>`}).join('');$('farmCaption').textContent=`Crop classes come from ${sc.layout}. Synthetic crop-water demand uses demonstration factors (${Object.entries(cropFactor).map(([k,v])=>k+' '+v.toFixed(2)+'×').join(', ')}); these demand factors are not values from the workbook.`}
-function renderKpis(sc,b,c){const irrSave=b.farmIrrML-c.farmIrrML,erGain=c.farmEffRainML-b.farmEffRainML,stressSave=b.stress-c.stress,changed=c.events.filter(e=>e.type==='delay').length,conflicts=c.queues.length;const cards=[['Irrigation difference',(irrSave>=0?'+':'')+fmt(irrSave,1)+' ML',`${fmt(b.farmIrrML,1)} → ${fmt(c.farmIrrML,1)} ML`,irrSave>=0?'good':'warn'],['Effective rain gain',(erGain>=0?'+':'')+fmt(erGain,1)+' ML',`${fmt(b.farmEffRainML,1)} → ${fmt(c.farmEffRainML,1)} ML`,erGain>=0?'good':''],['Stress reduction',(stressSave>=0?'+':'')+fmt(stressSave,1),`${fmt(b.stress,1)} → ${fmt(c.stress,1)} stress index`,stressSave>=0?'good':'warn'],[sc.water==='limited'?'Allocation left':'Forecast delays',sc.water==='limited'?`${fmt(c.leftMLha,2)} ML/ha`:`${changed}`,sc.water==='limited'?`CLOVER average remaining`:'irrigation decisions delayed',''],['Capacity conflicts',`${conflicts}`,state.level===5?'multi-IMU demand days':'days with >1 IMU due','']];$('kpiGrid').innerHTML=cards.map(x=>`<div class="panel kpi ${x[3]}"><div class="label">${x[0]}</div><div class="big">${x[1]}</div><div class="sub">${x[2]}</div></div>`).join('')}
-function renderResults(sc,b,c){$('imuResults').innerHTML=b.imus.map((m,i)=>{const x=c.imus[i],d=m.irrig-x.irrig,er=x.effRain-m.effRain,st=m.stress-x.stress;return`<tr><td>${m.name}</td><td>${m.crop}</td><td>${fmt(m.area,2)} ha</td><td>${fmt(m.irrig,0)} mm</td><td>${fmt(x.irrig,0)} mm</td><td class="${d>0?'positive':d<0?'negative':''}">${d>=0?'+':''}${fmt(d,0)} mm</td><td class="${er>0?'positive':''}">${er>=0?'+':''}${fmt(er,1)} mm</td><td class="${st>0?'positive':st<0?'negative':''}">${st>=0?'+':''}${fmt(st,1)}</td></tr>`}).join('')}
-function renderQueue(c){$('queueCount').textContent=`${c.queues.length} conflict days`;$('queueList').innerHTML=c.queues.slice(0,18).map(q=>{const sig=q.sig?` Forecast: ${q.sig.fc} mm @ ${q.sig.prob}% in ${q.sig.ahead} d.`:'';return`<div class="queue-item"><div class="date">${date(q.day)}</div><div class="queue">Due: ${q.due.join(', ')}${q.candidates.length<q.due.length?' · some delayed for forecast':''}</div><div class="winner">Slot → ${q.winner}</div><div class="reason">Rule: ${q.rule}.${sig}</div></div>`}).join('')||'<div class="farm-caption">No multi-IMU conflicts occurred in this synthetic weather run. Try New synthetic weather or adjust the SWD trigger.</div>'}
-function render(){renderLevel();renderEvidence();renderSystemPicker();const key=currentScenario();state.scenario=key;const sc=S[key];$('allocationGroup').classList.toggle('hidden',sc.water!=='limited');$('triggerV').textContent=$('trigger').value;$('rainV').textContent=$('rainThreshold').value;$('probV').textContent=$('probThreshold').value;$('lookV').textContent=$('lookahead').value;$('allocationV').textContent=fmt($('allocation').value,2);renderScenario(sc);const p=params(sc);const baseRule='fixed',cloverRule=state.level===5?state.priorityRule:'fixed';const b=simulate(sc,false,p,baseRule),c=simulate(sc,true,p,cloverRule);renderImus(sc,b,c);renderKpis(sc,b,c);renderResults(sc,b,c);rainChart(p);swdChart(b,c,p);if(state.level===5)renderQueue(c);$('heroBadge').textContent=`Level ${state.level} · ${sc.name}`}
-function switchLevel(level){state.level=level;if(level===1)loadScenario('tablelands_cp');else if(level===2)loadScenario('mackay_cp');else if(level===3)loadScenario(state.value==='limited'?'mackay_traveller':'tablelands_cp');else if(level===4)loadScenario(state.system);else loadScenario(state.priorityScenario)}
-document.querySelectorAll('.level-tab').forEach(b=>b.onclick=()=>switchLevel(+b.dataset.level));document.querySelectorAll('.value-card').forEach(b=>b.onclick=()=>{state.value=b.dataset.value;document.querySelectorAll('.value-card').forEach(x=>x.classList.toggle('active',x===b));loadScenario(state.value==='limited'?'mackay_traveller':'tablelands_cp')});$('priorityScenario').onchange=e=>{state.priorityScenario=e.target.value;loadScenario(state.priorityScenario)};$('priorityRule').onchange=e=>{state.priorityRule=e.target.value;render()};['trigger','rainThreshold','probThreshold','lookahead','allocation'].forEach(id=>$(id).addEventListener('input',render));$('newWeather').onclick=()=>{state.seed=Math.floor(Math.random()*1e9);genWeather();render()};genWeather();renderEvidence();loadScenario('tablelands_cp');
+function controls(){
+  return{tr:+$('trigger').value,rain:+$('rainThreshold').value,prob:+$('probThreshold').value,look:+$('lookahead').value,force:+$('trigger').value+20,alloc:+$('allocation').value};
+}
+function forecastSignal(day,p){
+  let best=null;
+  for(let k=0;k<p.look;k++){
+    const w=state.weather[day+k];if(!w)break;
+    if(w.fc>=p.rain&&w.prob>=p.prob){
+      if(!best||w.fc*w.prob>best.fc*best.prob)best={...w,ahead:k};
+    }
+  }
+  return best;
+}
+function prioritySort(a,b,rule){
+  if(rule==='fixed')return a.idx-b.idx;
+  if(rule==='crop')return (CROP[b.crop]?.priority||0)-(CROP[a.crop]?.priority||0)||b.swd-a.swd;
+  if(rule==='stress')return b.stress-a.stress||b.swd-a.swd;
+  return b.swd-a.swd;
+}
+function runStrategy(smart,scenario,p,capacityMode){
+  const imus=scenario.imus.map((x,idx)=>({
+    name:x[0],crop:x[1],area:scenario.areaEach,idx,
+    swd:clamp((CROP[x[1]]?.start||45)+(idx%3-1)*3,5,100),last:-999,
+    left:scenario.limited?p.alloc:Infinity,irrig:0,effRain:0,stress:0,delays:0,capacityWaits:0,history:[],logs:[]
+  }));
+  const dailyIrr=[],avgSwd=[];
+  for(let day=0;day<N;day++){
+    const w=state.weather[day],signal=forecastSignal(day,p),candidates=[];
+    imus.forEach(u=>{
+      const cf=CROP[u.crop]||CROP.P;
+      u.swd=clamp(u.swd+w.etc*cf.factor,0,160);
+      if(u.crop==='F'){
+        u.history.push(null);return;
+      }
+      const need=u.swd>=p.tr,ready=(day-u.last)>=scenario.cycle,water=u.left>.01;
+      if(need&&ready&&water){
+        if(smart&&signal&&u.swd<p.force){
+          u.delays++;u.logs.push({day,type:'delay',text:`${u.name} delayed: forecast ${signal.fc} mm at ${signal.prob}% in +${signal.ahead} d; SWD ${fmt(u.swd,0)} mm.`});
+        }else{
+          candidates.push({u,idx:u.idx,crop:u.crop,swd:u.swd,stress:u.stress,signal});
+        }
+      }
+    });
+    let selected=candidates;
+    if(capacityMode&&candidates.length>1){
+      selected=[...candidates].sort((a,b)=>prioritySort(a,b,state.priority))[0]?[ [...candidates].sort((a,b)=>prioritySort(a,b,state.priority))[0] ]:[];
+      const chosen=selected[0]?.u;
+      candidates.forEach(c=>{
+        if(c.u!==chosen){c.u.capacityWaits++;c.u.logs.push({day,type:'capacity',text:`${c.u.name} was due but waited for pump capacity; priority selected ${chosen?.name||'another IMU'}.`})}
+      });
+    }
+    let dayML=0;
+    selected.forEach(c=>{
+      const u=c.u;
+      const app=Math.min(scenario.net,u.left);
+      if(app>0){
+        u.irrig+=app;u.swd=Math.max(0,u.swd-app);u.last=day;if(isFinite(u.left))u.left-=app;
+        dayML+=app*u.area*.01;
+        u.logs.push({day,type:'irr',text:`${u.name} irrigated ${fmt(app,1)} mm at SWD ${fmt(c.swd,0)} mm.`});
+      }
+    });
+    imus.forEach(u=>{
+      const room=Math.max(0,u.swd),er=Math.min(w.actual,room);
+      u.effRain+=er*u.area*.01;u.swd=Math.max(0,u.swd-er);
+      if(u.crop!=='F'&&u.swd>75)u.stress+=(u.swd-75)/25;
+      if(u.crop!=='F')u.history.push(+u.swd.toFixed(1));
+    });
+    const active=imus.filter(u=>u.crop!=='F');
+    avgSwd.push(active.length?active.reduce((s,u)=>s+u.swd,0)/active.length:0);
+    dailyIrr.push(dayML);
+  }
+  return{
+    imus,dailyIrr,avgSwd,
+    totalML:dailyIrr.reduce((a,b)=>a+b,0),
+    effRainML:imus.reduce((a,u)=>a+u.effRain,0),
+    stress:imus.reduce((a,u)=>a+u.stress,0),
+    delays:imus.reduce((a,u)=>a+u.delays,0),
+    capacityWaits:imus.reduce((a,u)=>a+u.capacityWaits,0),
+    logs:imus.flatMap(u=>u.logs.map(x=>({...x,imu:u.name}))).sort((a,b)=>a.day-b.day)
+  };
+}
+function selectedScenario(){return SCENARIOS[state.scenario]}
+function isCapacityMode(){return state.level===5}
+function applyLevel(level){
+  state.level=level;
+  document.querySelectorAll('.level-tab').forEach(b=>b.classList.toggle('active',+b.dataset.level===level));
+  document.querySelectorAll('.level-page').forEach(p=>p.classList.toggle('active',+p.dataset.page===level));
+  if(level===1)state.scenario='tablelands_cp';
+  if(level===2)state.scenario='mackay_cp';
+  if(level===3)state.scenario=state.valuePath==='limited'?'mackay_traveller':'tablelands_cp';
+  if(level===4&&!['tablelands_cp','tablelands_lm','mackay_traveller','furrow_9'].includes(state.scenario))state.scenario='tablelands_cp';
+  if(level===5)state.scenario='mackay_traveller';
+  render();
+}
+function setMap(regionKey){
+  const r=REGIONS[regionKey],q=encodeURIComponent(r.query);
+  $('mapRegionTitle').textContent=r.title;$('mapCaption').textContent=r.caption;
+  $('farmMap').src='https://www.google.com/maps?q='+q+'&output=embed';
+  $('mapLink').href='https://www.google.com/maps/search/?api=1&query='+q;
+}
+function renderScenarioInfo(s){
+  $('scenarioName').textContent=s.label;
+  const levelText={
+    1:'Controlled forecast ON/OFF demonstration using Steve’s 4-IMU Centre Pivot structure.',
+    2:'Synthetic exploration using the same 4-IMU structure as the workbook IrrigWeb example.',
+    3:state.valuePath==='limited'?'Limited-water demonstration: watch stress and remaining irrigation as well as water saved.':'Non-limited demonstration: watch whether forecast rain substitutes for irrigation.',
+    4:'System comparison: the same synthetic weather/SWD logic is loaded onto this workbook farm setup.',
+    5:'Full farm demonstration: forecast decision + single-pump capacity + IMU priority.'
+  }[state.level];
+  $('scenarioSummary').textContent=levelText;
+  $('scenarioFacts').innerHTML=s.facts.map(x=>`<div class="fact"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+  $('scenarioNote').textContent=s.note;
+  $('sourceLabel').textContent='Farm Scenarios workbook';
+  setMap(s.region);
+  $('headerBadge').textContent=`Level ${state.level} · ${s.label}`;
+  $('allocationControl').style.display=s.limited?'block':'none';
+  $('imuModeLabel').textContent=isCapacityMode()?'single-pump capacity enabled':'independent IMU water-balance view';
+}
+function renderIMUs(s,b,c,p){
+  $('imuGrid').innerHTML=c.imus.map((u,i)=>{
+    const bu=b.imus[i],pct=clamp(u.swd/120*100,0,100),fall=u.crop==='F';
+    const status=fall?'Fallow — not irrigated':u.swd>=p.tr?'Dry / irrigation pressure':'Below trigger';
+    return `<div class="imu ${fall?'fallow':''}">
+      <div class="top"><div><div class="imu-name">${u.name}</div><div class="imu-area">${fmt(u.area,2)} ha</div></div><div class="crop-badge">${u.crop}</div></div>
+      <div class="imu-swd">${fmt(u.swd,0)} <span>mm final SWD</span></div>
+      <div class="imu-status">${status} · B ${fmt(bu.irrig,0)} / C ${fmt(u.irrig,0)} mm irrig.</div>
+      <div class="imu-bar"><i style="width:${pct}%"></i></div>
+    </div>`;
+  }).join('');
+}
+function renderKPIs(s,b,c){
+  const saved=b.totalML-c.totalML,eff=c.effRainML-b.effRainML,stress=b.stress-c.stress;
+  const cards=[
+    ['Irrigation saving',`${saved>=0?'+':''}${fmt(saved,1)} ML`,`B ${fmt(b.totalML,1)} → C ${fmt(c.totalML,1)} ML`],
+    ['Effective rain gain',`${eff>=0?'+':''}${fmt(eff,1)} ML`,`farm total`],
+    ['Stress reduction',`${stress>=0?'+':''}${fmt(stress,1)}`,`synthetic stress index`],
+    ['Forecast delays',String(c.delays),`CLOVER decisions`],
+    [isCapacityMode()?'Capacity waits':'System cycle',isCapacityMode()?String(c.capacityWaits):`${s.cycleAssumption?'assumed ':''}${s.cycle} d`,isCapacityMode()?`one irrigation slot/day`:`workbook / noted assumption`]
+  ];
+  $('kpis').innerHTML=cards.map(x=>`<div class="kpi"><span>${x[0]}</span><b>${x[1]}</b><small>${x[2]}</small></div>`).join('');
+}
+function renderResultTable(b,c){
+  $('resultBody').innerHTML=c.imus.map((u,i)=>{
+    const bu=b.imus[i],saved=bu.irrig-u.irrig;
+    return `<tr><td>${u.name}</td><td>${u.crop}</td><td>${fmt(u.area,2)} ha</td><td>${fmt(bu.irrig,1)} mm</td><td>${fmt(u.irrig,1)} mm</td><td>${fmt(saved,1)} mm</td><td>${u.delays}</td><td>${fmt(bu.swd,0)} / ${fmt(u.swd,0)} mm</td></tr>`;
+  }).join('');
+}
+function renderDecisionList(c){
+  const logs=[...c.logs].reverse().slice(0,18);
+  $('decisionCount').textContent=`${c.logs.length} logged decisions`;
+  $('decisionList').innerHTML=logs.length?logs.map(x=>`<div class="decision ${x.type}"><b>${date(x.day)} · ${x.imu}</b><span>${x.text}</span></div>`).join(''):'<div class="assumption-note">No irrigation or forecast-delay decisions occurred in this synthetic weather run.</div>';
+}
+function E(tag,a={},t=''){const e=document.createElementNS('http://www.w3.org/2000/svg',tag);Object.entries(a).forEach(([k,v])=>e.setAttribute(k,v));if(t)e.textContent=t;return e}
+function clear(svg){while(svg.firstChild)svg.removeChild(svg.firstChild)}
+function dims(H,max,flip=false){const W=1100,L=52,R=18,T=24,B=38,pw=W-L-R,ph=H-T-B;return{W,H,L,R,T,B,pw,ph,x:i=>L+i*pw/(N-1),y:v=>flip?T+v/max*ph:T+ph-v/max*ph}}
+function grid(svg,d,max,label){
+  for(let g=0;g<=4;g++){const v=max*g/4,y=d.y(v);svg.append(E('line',{x1:d.L,y1:y,x2:d.W-d.R,y2:y,class:'gridline'}));svg.append(E('text',{x:d.L-7,y:y+3,'text-anchor':'end',class:'axistext'},Math.round(v)))}
+  svg.append(E('text',{x:8,y:16,class:'axistext'},label));
+  for(let i=0;i<N;i+=7)svg.append(E('text',{x:d.x(i),y:d.H-10,'text-anchor':'middle',class:'axistext'},date(i)));
+}
+function linePath(arr,x,y){return arr.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)).join(' ')}
+function rainChart(p){
+  const s=$('rainChart');clear(s);const max=Math.max(45,...state.weather.map(w=>Math.max(w.actual,w.fc))),d=dims(285,max),bw=Math.max(3,d.pw/N*.48);grid(s,d,max,'mm');
+  state.weather.forEach((w,i)=>{const q=w.fc>=p.rain&&w.prob>=p.prob;s.append(E('rect',{x:d.x(i)-bw*.7,y:d.y(w.fc),width:bw*.58,height:d.y(0)-d.y(w.fc),fill:'#a8cde7',opacity:.8,stroke:q?'#2f8f63':'none','stroke-width':q?2:0,rx:2}));s.append(E('rect',{x:d.x(i),y:d.y(w.actual),width:bw*.58,height:d.y(0)-d.y(w.actual),fill:'#3e83b7',rx:2}))});
+  const y=d.y(p.rain);s.append(E('line',{x1:d.L,y1:y,x2:d.W-d.R,y2:y,stroke:'#2f8f63','stroke-dasharray':'4 5'}));
+}
+function irrigationChart(b,c){
+  const s=$('irrigationChart');clear(s);const max=Math.max(1,...b.dailyIrr,...c.dailyIrr)*1.15,d=dims(260,max),bw=Math.max(3,d.pw/N*.32);grid(s,d,max,'ML/day');
+  b.dailyIrr.forEach((v,i)=>{if(v>0)s.append(E('rect',{x:d.x(i)-bw,y:d.y(v),width:bw*.9,height:d.y(0)-d.y(v),fill:'#a6b2ac'}))});
+  c.dailyIrr.forEach((v,i)=>{if(v>0)s.append(E('rect',{x:d.x(i)+1,y:d.y(v),width:bw*.9,height:d.y(0)-d.y(v),fill:'#d78636'}))});
+  s.append(E('text',{x:760,y:16,class:'axistext'},'grey = Baseline · orange = CLOVER'));
+}
+function swdChart(b,c,p){
+  const s=$('swdChart');clear(s);const max=Math.max(110,p.force+20,...b.avgSwd,...c.avgSwd),d=dims(285,max,true);grid(s,d,max,'SWD mm');
+  const tr=d.y(p.tr);s.append(E('line',{x1:d.L,y1:tr,x2:d.W-d.R,y2:tr,stroke:'#8da197','stroke-dasharray':'5 5'}));
+  s.append(E('path',{d:linePath(b.avgSwd,d.x,d.y),fill:'none',stroke:'#85958e','stroke-width':2.2}));
+  s.append(E('path',{d:linePath(c.avgSwd,d.x,d.y),fill:'none',stroke:'#2f8f63','stroke-width':3}));
+  s.append(E('text',{x:750,y:16,class:'axistext'},'grey = Baseline · green = CLOVER'));
+}
+function updateLabels(){
+  $('triggerV').textContent=$('trigger').value;$('rainV').textContent=$('rainThreshold').value;$('probV').textContent=$('probThreshold').value;$('lookV').textContent=$('lookahead').value;$('allocationV').textContent=$('allocation').value;
+}
+function render(){
+  updateLabels();const s=selectedScenario(),p=controls();
+  renderScenarioInfo(s);
+  const b=runStrategy(false,s,p,isCapacityMode()),c=runStrategy(true,s,p,isCapacityMode());
+  renderIMUs(s,b,c,p);renderKPIs(s,b,c);renderResultTable(b,c);renderDecisionList(c);rainChart(p);irrigationChart(b,c);swdChart(b,c,p);
+  document.querySelectorAll('.system-card').forEach(x=>x.classList.toggle('active',x.dataset.scenario===state.scenario));
+  document.querySelectorAll('.value-card').forEach(x=>x.classList.toggle('active',x.dataset.valuepath===state.valuePath));
+}
+document.querySelectorAll('.level-tab').forEach(b=>b.addEventListener('click',()=>applyLevel(+b.dataset.level)));
+document.querySelectorAll('.system-card').forEach(b=>b.addEventListener('click',()=>{state.scenario=b.dataset.scenario;render()}));
+document.querySelectorAll('.value-card').forEach(b=>b.addEventListener('click',()=>{state.valuePath=b.dataset.valuepath;state.scenario=state.valuePath==='limited'?'mackay_traveller':'tablelands_cp';render()}));
+['trigger','rainThreshold','probThreshold','lookahead','allocation'].forEach(id=>$(id).addEventListener('input',render));
+$('priorityRule').addEventListener('change',e=>{state.priority=e.target.value;render()});
+$('newWeatherBtn').addEventListener('click',()=>{state.seed=Math.floor(Math.random()*1e9);genWeather();render()});
+genWeather();applyLevel(1);
 })();
