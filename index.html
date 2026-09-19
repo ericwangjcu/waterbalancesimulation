@@ -32,9 +32,9 @@
       <div>
         <div class="eyebrow">Level 1 — understand the basic CLOVER decision</div>
         <h2>Same farm. Same crop demand. Same weather. One difference: CLOVER can see the short-term forecast.</h2>
-        <p>Start with Steve's Centre Pivot setup. The four equal-quarter IMUs are simulated independently for soil-water accounting so we can see which crop classes are becoming dry. Baseline irrigates when the SWD rule is met. CLOVER checks the rainfall forecast first and can wait.</p>
+        <p>Start with Steve's Centre Pivot setup. The four equal-quarter IMUs have separate soil-water states, but they share one irrigation system. The pump/system services one eligible IMU at a time in a simple rotating sequence. Baseline irrigates when the SWD rule is met; CLOVER checks the rainfall forecast first and can wait.</p>
       </div>
-      <div class="story-flow"><span>SWD says irrigation is due</span><i>→</i><span>Forecast checked</span><i>→</i><span>Irrigate now or wait</span><i>→</i><span>Compare effective rain + irrigation</span></div>
+      <div class="story-flow"><span>SWD says irrigation is due</span><i>→</i><span>Forecast checked</span><i>→</i><span>Shared pump chooses next eligible IMU</span><i>→</i><span>Irrigate now or wait</span></div>
     </div>
   </section>
 
@@ -111,7 +111,7 @@
       <div>
         <div class="eyebrow">Level 5 — full CLOVER farm decision</div>
         <h2>When several IMUs need irrigation and one pump cannot service them all, which IMU goes first?</h2>
-        <p>This level keeps Steve's 11-IMU Mackay traveller geometry and irrigation capacity because one traveller/pump creates an intuitive capacity constraint. We then place the CLOVER decision layer on top as a future-state demonstration: decide whether irrigation should proceed or wait for forecast rain, then choose among eligible IMUs.</p>
+        <p>This level keeps Steve's 11-IMU Mackay traveller geometry and shared irrigation capacity. Baseline uses the simple rotating sequence used in Levels 1–4. CLOVER first decides whether irrigation should proceed or wait for forecast rain, then the selected priority rule chooses among eligible IMUs.</p>
       </div>
       <div class="priority-control">
         <label for="priorityRule">Priority rule</label>
@@ -121,7 +121,7 @@
           <option value="swd" selected>Highest SWD</option>
           <option value="stress">Highest crop stress</option>
         </select>
-        <div class="assumption-note">Priority rules are our simulation layer; Steve's workbook defines the farm/IMUs but does not prescribe this priority algorithm.</div>
+        <div class="assumption-note">The fixed rotating sequence is the simple baseline rule. Crop stage, highest SWD and highest crop stress are our alternative simulation rules; Steve's workbook defines the farm/IMUs but does not prescribe these priority algorithms.</div>
       </div>
     </div>
   </section>
@@ -180,7 +180,7 @@
     <div class="results-grid">
       <div class="result-table-wrap">
         <div class="section-head"><h3>IMU result summary</h3><span>synthetic 45-day comparison</span></div>
-        <div class="scroll"><table class="result-table"><thead><tr><th>IMU</th><th>Crop</th><th>Area</th><th>Baseline irrig.</th><th>CLOVER irrig.</th><th>Saved</th><th>Forecast delays</th><th>Final SWD B/C</th></tr></thead><tbody id="resultBody"></tbody></table></div>
+        <div class="scroll"><table class="result-table"><thead><tr><th>IMU</th><th>Crop</th><th>Area</th><th>Baseline irrig.</th><th>CLOVER irrig.</th><th>Saved</th><th>Forecast delays</th><th>Pump waits</th><th>Final SWD B/C</th></tr></thead><tbody id="resultBody"></tbody></table></div>
       </div>
       <div class="decision-wrap">
         <div class="section-head"><h3>Recent CLOVER decisions</h3><span id="decisionCount"></span></div>
