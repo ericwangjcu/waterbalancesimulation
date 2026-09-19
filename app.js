@@ -102,13 +102,23 @@ function prioritySort(a,b,rule){
   if(rule==='stress')return b.stress-a.stress||b.swd-a.swd;
   return b.swd-a.swd;
 }
-function runStrategy(smart,scenario,p,capacityMode){
+function chooseCandidate(candidates,rule,nextIdx,count){
+  if(!candidates.length)return null;
+  if(rule==='fixed'){
+    return [...candidates].sort((a,b)=>{
+      const da=(a.idx-nextIdx+count)%count,db=(b.idx-nextIdx+count)%count;
+      return da-db;
+    })[0];
+  }
+  return [...candidates].sort((a,b)=>prioritySort(a,b,rule))[0];
+}
+function runStrategy(smart,scenario,p,rule='fixed'){
   const imus=scenario.imus.map((x,idx)=>({
     name:x[0],crop:x[1],area:scenario.areaEach,idx,
     swd:clamp((CROP[x[1]]?.start||45)+(idx%3-1)*3,5,100),last:-999,
     left:scenario.limited?p.alloc:Infinity,irrig:0,effRain:0,stress:0,delays:0,capacityWaits:0,history:[],logs:[]
   }));
-  const dailyIrr=[],avgSwd=[];
+  const dailyIrr=[],avgSwd=[];let nextIdx=0;
   for(let day=0;day<N;day++){
     const w=state.weather[day],signal=forecastSignal(day,p),candidates=[];
     imus.forEach(u=>{
@@ -126,22 +136,27 @@ function runStrategy(smart,scenario,p,capacityMode){
         }
       }
     });
-    let selected=candidates;
-    if(capacityMode&&candidates.length>1){
-      selected=[...candidates].sort((a,b)=>prioritySort(a,b,state.priority))[0]?[ [...candidates].sort((a,b)=>prioritySort(a,b,state.priority))[0] ]:[];
-      const chosen=selected[0]?.u;
-      candidates.forEach(c=>{
-        if(c.u!==chosen){c.u.capacityWaits++;c.u.logs.push({day,type:'capacity',text:`${c.u.name} was due but waited for pump capacity; priority selected ${chosen?.name||'another IMU'}.`})}
+    const chosenCandidate=chooseCandidate(candidates,rule,nextIdx,imus.length);
+    const selected=chosenCandidate?[chosenCandidate]:[];
+    const chosen=chosenCandidate?.u;
+    if(chosen)nextIdx=(chosen.idx+1)%imus.length;
+    if(candidates.length>1){
+      const ruleText=rule==='fixed'?'fixed rotating sequence':rule==='crop'?'crop-stage priority':rule==='stress'?'highest crop stress':'highest SWD';
+      candidates.forEach(x=>{
+        if(x.u!==chosen){
+          x.u.capacityWaits++;
+          x.u.logs.push({day,type:'capacity',text:`${x.u.name} was due but waited for the shared pump; ${ruleText} selected ${chosen?.name||'another IMU'}.`});
+        }
       });
     }
     let dayML=0;
-    selected.forEach(c=>{
-      const u=c.u;
+    selected.forEach(x=>{
+      const u=x.u;
       const app=Math.min(scenario.net,u.left);
       if(app>0){
         u.irrig+=app;u.swd=Math.max(0,u.swd-app);u.last=day;if(isFinite(u.left))u.left-=app;
         dayML+=app*u.area*.01;
-        u.logs.push({day,type:'irr',text:`${u.name} irrigated ${fmt(app,1)} mm at SWD ${fmt(c.swd,0)} mm.`});
+        u.logs.push({day,type:'irr',text:`${u.name} irrigated ${fmt(app,1)} mm at SWD ${fmt(x.swd,0)} mm.`});
       }
     });
     imus.forEach(u=>{
