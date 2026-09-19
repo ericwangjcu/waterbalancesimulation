@@ -180,7 +180,6 @@ function runStrategy(smart,scenario,p,rule='fixed'){
   };
 }
 function selectedScenario(){return SCENARIOS[state.scenario]}
-function isCapacityMode(){return state.level===5}
 function applyLevel(level){
   state.level=level;
   document.querySelectorAll('.level-tab').forEach(b=>b.classList.toggle('active',+b.dataset.level===level));
@@ -201,11 +200,11 @@ function setMap(regionKey){
 function renderScenarioInfo(s){
   $('scenarioName').textContent=s.label;
   const levelText={
-    1:'Controlled forecast ON/OFF demonstration using Steve’s 4-IMU Centre Pivot structure.',
-    2:'Synthetic exploration using the same 4-IMU structure as the workbook IrrigWeb example.',
-    3:state.valuePath==='limited'?'Limited-water demonstration: watch stress and remaining irrigation as well as water saved.':'Non-limited demonstration: watch whether forecast rain substitutes for irrigation.',
-    4:'System comparison: the same synthetic weather/SWD logic is loaded onto this workbook farm setup.',
-    5:'Full farm demonstration: forecast decision + single-pump capacity + IMU priority.'
+    1:'Controlled forecast ON/OFF demonstration using Steve’s 4-IMU Centre Pivot structure with one shared pump/system and a fixed rotating IMU sequence.',
+    2:'Synthetic exploration using the same 4-IMU structure as the workbook IrrigWeb example, with shared pump capacity respected.',
+    3:state.valuePath==='limited'?'Limited-water demonstration with one shared irrigation system: watch stress, pump waiting and remaining irrigation as well as water saved.':'Non-limited demonstration with one shared irrigation system: watch whether forecast rain substitutes for irrigation.',
+    4:'Farm-scenario comparison: each workbook setup uses one shared pump/system and a simple fixed rotating sequence.',
+    5:'Full farm demonstration: Baseline keeps the fixed pump sequence; CLOVER can use the selected IMU priority rule after the forecast decision.'
   }[state.level];
   $('scenarioSummary').textContent=levelText;
   $('scenarioFacts').innerHTML=s.facts.map(x=>`<div class="fact"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
@@ -214,7 +213,8 @@ function renderScenarioInfo(s){
   setMap(s.region);
   $('headerBadge').textContent=`Level ${state.level} · ${s.label}`;
   $('allocationControl').style.display=s.limited?'block':'none';
-  $('imuModeLabel').textContent=isCapacityMode()?'single-pump capacity enabled':'independent IMU water-balance view';
+  const ruleName=state.priority==='fixed'?'fixed sequence':state.priority==='crop'?'crop-stage priority':state.priority==='stress'?'highest-stress priority':'highest-SWD priority';
+  $('imuModeLabel').textContent=state.level===5?`shared pump · Baseline fixed · CLOVER ${ruleName}`:'shared pump · fixed rotating sequence';
 }
 function renderIMUs(s,b,c,p){
   $('imuGrid').innerHTML=c.imus.map((u,i)=>{
@@ -235,14 +235,14 @@ function renderKPIs(s,b,c){
     ['Effective rain gain',`${eff>=0?'+':''}${fmt(eff,1)} ML`,`farm total`],
     ['Stress reduction',`${stress>=0?'+':''}${fmt(stress,1)}`,`synthetic stress index`],
     ['Forecast delays',String(c.delays),`CLOVER decisions`],
-    [isCapacityMode()?'Capacity waits':'System cycle',isCapacityMode()?String(c.capacityWaits):`${s.cycleAssumption?'assumed ':''}${s.cycle} d`,isCapacityMode()?`one irrigation slot/day`:`workbook / noted assumption`]
+    ['Shared-pump waits',String(c.capacityWaits),state.level===5?'CLOVER priority / capacity conflicts':'fixed-sequence capacity conflicts']
   ];
   $('kpis').innerHTML=cards.map(x=>`<div class="kpi"><span>${x[0]}</span><b>${x[1]}</b><small>${x[2]}</small></div>`).join('');
 }
 function renderResultTable(b,c){
   $('resultBody').innerHTML=c.imus.map((u,i)=>{
     const bu=b.imus[i],saved=bu.irrig-u.irrig;
-    return `<tr><td>${u.name}</td><td>${u.crop}</td><td>${fmt(u.area,2)} ha</td><td>${fmt(bu.irrig,1)} mm</td><td>${fmt(u.irrig,1)} mm</td><td>${fmt(saved,1)} mm</td><td>${u.delays}</td><td>${fmt(bu.swd,0)} / ${fmt(u.swd,0)} mm</td></tr>`;
+    return `<tr><td>${u.name}</td><td>${u.crop}</td><td>${fmt(u.area,2)} ha</td><td>${fmt(bu.irrig,1)} mm</td><td>${fmt(u.irrig,1)} mm</td><td>${fmt(saved,1)} mm</td><td>${u.delays}</td><td>${u.capacityWaits}</td><td>${fmt(bu.swd,0)} / ${fmt(u.swd,0)} mm</td></tr>`;
   }).join('');
 }
 function renderDecisionList(c){
@@ -283,7 +283,9 @@ function updateLabels(){
 function render(){
   updateLabels();const s=selectedScenario(),p=controls();
   renderScenarioInfo(s);
-  const b=runStrategy(false,s,p,isCapacityMode()),c=runStrategy(true,s,p,isCapacityMode());
+  const b=runStrategy(false,s,p,'fixed');
+  const cloverRule=state.level===5?state.priority:'fixed';
+  const c=runStrategy(true,s,p,cloverRule);
   renderIMUs(s,b,c,p);renderKPIs(s,b,c);renderResultTable(b,c);renderDecisionList(c);rainChart(p);irrigationChart(b,c);swdChart(b,c,p);
   document.querySelectorAll('.system-card').forEach(x=>x.classList.toggle('active',x.dataset.scenario===state.scenario));
   document.querySelectorAll('.value-card').forEach(x=>x.classList.toggle('active',x.dataset.valuepath===state.valuePath));
