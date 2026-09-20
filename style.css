@@ -304,3 +304,17 @@ h1{font-weight:700}
   .step-chart-head{flex-direction:column}
   .chart-key{white-space:normal;flex-wrap:wrap}
 }
+
+
+/* Step 1 per-IMU SWD time series */
+.step1-imu-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 10px}
+.step1-imu-tab{border:1px solid #dce6e0;background:#f8faf9;color:#51675d;border-radius:8px;padding:7px 10px;font-size:10px;font-weight:700}
+.step1-imu-tab span{display:inline-block;margin-left:5px;font-size:9px;color:#7a8b83;font-weight:600}
+.step1-imu-tab.active{background:#edf7f1;border-color:#9bc8ae;color:#24583f}
+.step1-imu-tab.active span{color:#3b7257}
+.chart-key .key-line{width:20px;border-top:3px solid #3f8360;display:inline-block}
+.chart-key .key-irrigation{width:10px;height:10px;border-radius:50%;background:#d78636;display:inline-block;margin-left:7px}
+.step1-swd-line{stroke:#3f8360;stroke-width:3;fill:none}
+.step1-swd-point{fill:#fff;stroke:#3f8360;stroke-width:2}
+.step1-irrig-marker{fill:#d78636;stroke:#fff;stroke-width:2}
+.step1-irrig-label{fill:#9a5c23;font-size:9px;font-weight:700}
