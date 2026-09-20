@@ -308,8 +308,6 @@ function renderScenarioInfo(s){
   setMap(s.region);
   $('headerBadge').textContent=`Level ${state.level} · ${s.label}`;
   $('allocationControl').style.display=s.limited?'block':'none';
-  const ruleName=state.priority==='fixed'?'fixed sequence':state.priority==='crop'?'crop-stage priority':state.priority==='stress'?'highest-stress priority':'highest-SWD priority';
-  $('imuModeLabel').textContent=state.level===5?`shared pump · Baseline fixed · CLOVER ${ruleName}`:'shared pump · fixed rotating sequence';
 }
 function renderIMUs(s,b,c,p){
   $('imuGrid').innerHTML=c.imus.map((u,i)=>{
