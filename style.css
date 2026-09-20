@@ -4,7 +4,7 @@
   --orange:#d78636;--red:#b85e57;--shadow:0 8px 26px rgba(31,68,50,.08)
 }
 *{box-sizing:border-box}
-body{margin:0;background:linear-gradient(180deg,#eef5f1 0,#f8faf9 300px,#f3f7f5 100%);color:var(--ink);font-family:"Segoe UI",Arial,sans-serif}
+body{margin:0;background:linear-gradient(180deg,#eef5f1 0,#f8faf9 300px,#f3f7f5 100%);color:var(--ink);font-family:Arial,Helvetica,sans-serif}
 button,select,input{font:inherit}
 button{cursor:pointer}
 .app{max-width:1500px;margin:0 auto;padding:24px}
@@ -273,3 +273,34 @@ footer{font-size:10px;color:#76877f;text-align:center;padding:15px 5px 5px}
 .workflow-dot:nth-child(n+13){border-top:3px solid #9fceb3}
 @media(max-width:1100px){.farm-comparison{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:600px){.farm-comparison{grid-template-columns:1fr 1fr}}
+
+
+/* Typography refresh */
+body{font-family:Arial,Helvetica,sans-serif}
+h1,h2,h3,.level-tab span,.workflow-dot span,.step-title h3{letter-spacing:-.01em}
+h1{font-weight:700}
+.subtitle,.step-title p,.workflow-head p{letter-spacing:0}
+
+/* Step 1 SWD chart */
+.step1-chart-wrap{background:#fff;border:1px solid #e4ebe7;border-radius:12px;padding:12px}
+.step-chart-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:5px}
+.step-chart-head b{display:block;font-size:13px}
+.step-chart-head span{display:block;font-size:9.5px;color:#7b8c84;margin-top:2px}
+.chart-key{display:flex;align-items:center;gap:6px;font-size:9.5px;color:#70837a;white-space:nowrap}
+.chart-key .key-bar{width:12px;height:10px;border-radius:3px;background:#5c9a78;display:inline-block}
+.chart-key .key-trigger{width:18px;border-top:2px dashed #c16f42;display:inline-block;margin-left:7px}
+.step1-swd-chart{width:100%;height:auto;display:block}
+.swd-bar{fill:#6fa889}
+.swd-bar-due{fill:#d8924e}
+.swd-bar-fallow{fill:#b8c2bd}
+.swd-value{fill:#263d33;font-size:12px;font-weight:700}
+.swd-imuname{fill:#263d33;font-size:11px;font-weight:700}
+.swd-crop{fill:#74867d;font-size:9px}
+.swd-trigger-line{stroke:#c16f42;stroke-width:2;stroke-dasharray:8 6}
+.swd-trigger-label{fill:#9d5b34;font-size:10px;font-weight:700}
+.step1-summary{margin-top:4px;padding:9px 10px;border-radius:9px;background:#f5f8f6;color:#566c61;font-size:10.5px}
+.step1-summary b{color:#274f3c;font-size:12px}
+@media(max-width:700px){
+  .step-chart-head{flex-direction:column}
+  .chart-key{white-space:normal;flex-wrap:wrap}
+}
