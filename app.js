@@ -260,6 +260,8 @@ function renderWorkflow(s,p,b,c,rawB,rawC){
   const ruleLabel=state.level===5?(state.priority==='fixed'?'Fixed rotating sequence':state.priority==='crop'?'Crop-stage priority':state.priority==='stress'?'Highest crop-stress priority':'Highest-SWD priority'):'Fixed rotating sequence';
   $('step11ForecastShift').innerHTML=renderShiftList(c,horizon,ruleLabel);
   $('step12ForecastFinal').innerHTML=scheduleTable(finalSchedule(c,horizon),'No CLOVER irrigation occurs in this planning window.');
+  const saved=b.totalML-c.totalML,eff=c.effRainML-b.effRainML,stress=b.stress-c.stress;
+  $('farmComparison').innerHTML='<div><span>Total irrigation</span><b>'+fmt(b.totalML,1)+' → '+fmt(c.totalML,1)+' ML</b></div><div><span>Irrigation difference</span><b>'+(saved>=0?'+':'')+fmt(saved,1)+' ML saved</b></div><div><span>Effective rainfall</span><b>'+fmt(b.effRainML,1)+' → '+fmt(c.effRainML,1)+' ML</b></div><div><span>Stress index</span><b>'+fmt(b.stress,1)+' → '+fmt(c.stress,1)+'</b></div><div><span>Forecast delays</span><b>'+c.delays+'</b></div><div><span>Pump waits</span><b>'+b.capacityWaits+' → '+c.capacityWaits+'</b></div>';
   updateWorkflowVisibility();
 }
 function updateWorkflowVisibility(){
