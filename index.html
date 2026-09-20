@@ -152,65 +152,138 @@
       </div>
     </div>
 
-    <div class="simulation-grid">
-      <aside class="controls-card">
-        <h3>Simulation controls</h3>
-        <div class="control"><label><span>SWD irrigation trigger</span><b><span id="triggerV">60</span> mm</b></label><input id="trigger" type="range" min="40" max="90" step="5" value="60"></div>
-        <div class="control"><label><span>Forecast rain threshold</span><b><span id="rainV">20</span> mm</b></label><input id="rainThreshold" type="range" min="5" max="40" step="5" value="20"></div>
-        <div class="control"><label><span>Forecast probability</span><b><span id="probV">70</span>%</b></label><input id="probThreshold" type="range" min="40" max="90" step="5" value="70"></div>
-        <div class="control"><label><span>Forecast look-ahead</span><b><span id="lookV">3</span> days</b></label><input id="lookahead" type="range" min="1" max="7" step="1" value="3"></div>
-        <div class="control" id="allocationControl"><label><span>Demo-window irrigation available</span><b><span id="allocationV">120</span> mm / IMU</b></label><input id="allocation" type="range" min="30" max="300" step="10" value="120"></div>
-        <div class="assumption-note">Synthetic rainfall, starting SWD and crop-stage water-demand multipliers are demonstration assumptions. They are not APSIM/IrrigWeb outputs.</div>
-      </aside>
-
-      <div class="imu-card-wrap">
-        <div class="section-head"><h3>IMUs in this scenario</h3><span id="imuModeLabel"></span></div>
-        <div class="imu-grid" id="imuGrid"></div>
+    <div class="workflow-head">
+      <div>
+        <div class="eyebrow">CLOVER decision workflow</div>
+        <h3>Follow the irrigation decision from current SWD to the final forecast-informed schedule</h3>
+        <p>Only one step is shown at a time. The 45-day synthetic model still runs underneath, but the workflow focuses on the next <b><span id="horizonText">14</span> days</b> so the logic is easier to follow.</p>
+      </div>
+      <div class="workflow-actions">
+        <button class="secondary" id="showAllStepsBtn" type="button">Show all steps</button>
       </div>
     </div>
 
-    <section class="imu-detail-panel">
-      <div class="section-head imu-detail-head">
-        <div>
-          <h3>IMU detail</h3>
-          <span>Click an IMU to inspect its own soil water deficit and irrigation history</span>
-        </div>
-        <div>
-          <b id="imuDetailTitle">IMU 1</b>
-          <span id="imuDetailMeta"></span>
-        </div>
-      </div>
-      <div class="imu-tabs" id="imuTabs"></div>
-      <div class="imu-detail-stats" id="imuDetailStats"></div>
-      <div class="imu-detail-charts">
-        <div class="imu-chart-card">
-          <div class="section-head"><h3>Soil water deficit — selected IMU</h3><span>daily SWD · Baseline vs CLOVER</span></div>
-          <svg id="imuSwdChart" viewBox="0 0 1100 265"></svg>
-        </div>
-        <div class="imu-chart-card">
-          <div class="section-head"><h3>Irrigation amount — selected IMU</h3><span>application amount and timing</span></div>
-          <svg id="imuIrrigationChart" viewBox="0 0 1100 245"></svg>
-        </div>
-      </div>
-    </section>
-
-    <div class="kpis" id="kpis"></div>
-
-    <div class="charts-grid">
-      <section class="chart-panel"><div class="section-head"><h3>Synthetic rainfall + qualifying forecast</h3><span>same weather for Baseline and CLOVER</span></div><svg id="rainChart" viewBox="0 0 1100 285"></svg></section>
-      <section class="chart-panel"><div class="section-head"><h3>Total farm irrigation</h3><span>sum across active IMUs</span></div><svg id="irrigationChart" viewBox="0 0 1100 260"></svg></section>
-      <section class="chart-panel wide"><div class="section-head"><h3>Average soil water deficit across active IMUs</h3><span>higher = drier</span></div><svg id="swdChart" viewBox="0 0 1100 285"></svg></section>
+    <div class="workflow-nav" id="workflowNav">
+      <button type="button" class="workflow-dot active" data-step="1"><b>1</b><span>Current SWD</span></button><button type="button" class="workflow-dot " data-step="2"><b>2</b><span>Irrigation settings</span></button><button type="button" class="workflow-dot " data-step="3"><b>3</b><span>Irrigation required</span></button><button type="button" class="workflow-dot " data-step="4"><b>4</b><span>Conflict days</span></button><button type="button" class="workflow-dot " data-step="5"><b>5</b><span>Resolve conflicts</span></button><button type="button" class="workflow-dot " data-step="6"><b>6</b><span>Final no-forecast schedule</span></button><button type="button" class="workflow-dot " data-step="7"><b>7</b><span>Weather forecast</span></button><button type="button" class="workflow-dot " data-step="8"><b>8</b><span>Forecast settings</span></button><button type="button" class="workflow-dot " data-step="9"><b>9</b><span>Forecast-adjusted need</span></button><button type="button" class="workflow-dot " data-step="10"><b>10</b><span>New conflict days</span></button><button type="button" class="workflow-dot " data-step="11"><b>11</b><span>Resolve new conflicts</span></button><button type="button" class="workflow-dot " data-step="12"><b>12</b><span>Final forecast schedule</span></button><button type="button" class="workflow-dot " data-step="13"><b>13</b><span>Compare IMUs + farm</span></button><button type="button" class="workflow-dot " data-step="14"><b>14</b><span>Water-saving summary</span></button>
     </div>
 
-    <div class="results-grid">
-      <div class="result-table-wrap">
-        <div class="section-head"><h3>IMU result summary</h3><span>synthetic 45-day comparison</span></div>
-        <div class="scroll"><table class="result-table"><thead><tr><th>IMU</th><th>Crop</th><th>Area</th><th>Baseline irrig.</th><th>CLOVER irrig.</th><th>Saved</th><th>Forecast delays</th><th>Pump waits</th><th>Final SWD B/C</th></tr></thead><tbody id="resultBody"></tbody></table></div>
-      </div>
-      <div class="decision-wrap">
-        <div class="section-head"><h3>Recent CLOVER decisions</h3><span id="decisionCount"></span></div>
-        <div class="decision-list" id="decisionList"></div>
-      </div>
+    <div class="workflow-steps" id="workflowSteps">
+      <section class="workflow-step active" data-workflow-step="1">
+        <div class="step-title"><b>1</b><div><h3>What is the current SWD across all IMUs?</h3><p>Start from each IMU's crop stage and synthetic starting soil-water deficit before any future irrigation decision is made.</p></div></div>
+        <div class="swd-start-grid" id="step1Swds"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="2">
+        <div class="step-title"><b>2</b><div><h3>What irrigation settings are we using?</h3><p>These are the rules that determine when an IMU needs water and how much one shared pump/system can apply.</p></div></div>
+        <div class="step-two-col">
+          <div class="step-card">
+            <div class="control"><label><span>SWD irrigation trigger</span><b><span id="triggerV">60</span> mm</b></label><input id="trigger" type="range" min="40" max="90" step="5" value="60"></div>
+            <div class="control" id="allocationControl"><label><span>Demo-window irrigation available</span><b><span id="allocationV">120</span> mm / IMU</b></label><input id="allocation" type="range" min="30" max="300" step="10" value="120"></div>
+            <div class="control"><label><span>Planning window</span><b><span id="horizonV">14</span> days</b></label><input id="planningHorizon" type="range" min="7" max="21" step="7" value="14"></div>
+          </div>
+          <div class="step-card" id="step2Settings"></div>
+        </div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="3">
+        <div class="step-title"><b>3</b><div><h3>Which IMUs would require irrigation over the next <span class="horizon-inline">14</span> days without using the forecast?</h3><p>This is the <b>raw irrigation requirement</b> before the shared-pump constraint is applied. More than one IMU can therefore appear on the same day.</p></div></div>
+        <div id="step3BaselineDemand"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="4">
+        <div class="step-title"><b>4</b><div><h3>Which days have an irrigation conflict?</h3><p>A conflict occurs when two or more IMUs require the one shared irrigation system on the same day.</p></div></div>
+        <div id="step4BaselineConflicts"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="5">
+        <div class="step-title"><b>5</b><div><h3>How do we shift irrigation to remove those conflicts?</h3><p>For the simple baseline, the shared pump follows the fixed rotating IMU sequence. One IMU irrigates; the others wait for the next available slot.</p></div></div>
+        <div id="step5BaselineShift"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="6">
+        <div class="step-title"><b>6</b><div><h3>What is the final irrigation schedule without forecast information?</h3><p>This is the feasible Baseline schedule after shared-pump conflicts have been resolved.</p></div></div>
+        <div id="step6BaselineFinal"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="7">
+        <div class="step-title"><b>7</b><div><h3>What does the rainfall forecast look like over the coming <span class="horizon-inline">14</span> days?</h3><p>Now add forecast rainfall amount and probability. At this step the forecast is information only; we have not changed irrigation yet.</p></div></div>
+        <div id="step7Forecast"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="8">
+        <div class="step-title"><b>8</b><div><h3>What forecast rule should CLOVER use?</h3><p>A forecast qualifies only when both the rainfall amount and probability thresholds are met within the look-ahead window.</p></div></div>
+        <div class="step-two-col">
+          <div class="step-card">
+            <div class="control"><label><span>Forecast rain threshold</span><b><span id="rainV">20</span> mm</b></label><input id="rainThreshold" type="range" min="5" max="40" step="5" value="20"></div>
+            <div class="control"><label><span>Forecast probability</span><b><span id="probV">70</span>%</b></label><input id="probThreshold" type="range" min="40" max="90" step="5" value="70"></div>
+            <div class="control"><label><span>Forecast look-ahead</span><b><span id="lookV">3</span> days</b></label><input id="lookahead" type="range" min="1" max="7" step="1" value="3"></div>
+          </div>
+          <div class="step-card" id="step8ForecastRule"></div>
+        </div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="9">
+        <div class="step-title"><b>9</b><div><h3>How does the forecast change the irrigation requirement?</h3><p>IMUs that would otherwise irrigate can now be delayed when qualifying rainfall is forecast, unless the soil is too dry to safely wait.</p></div></div>
+        <div id="step9ForecastDemand"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="10">
+        <div class="step-title"><b>10</b><div><h3>What conflict days remain after forecast-based delays?</h3><p>Forecasting can remove some conflicts, create different ones, or leave the same competition for the shared pump.</p></div></div>
+        <div id="step10ForecastConflicts"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="11">
+        <div class="step-title"><b>11</b><div><h3>How do we shift irrigation to remove the remaining conflicts?</h3><p>Levels 1–4 use the same fixed rotating sequence as Baseline. Level 5 can instead apply the selected priority rule.</p></div></div>
+        <div id="step11ForecastShift"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="12">
+        <div class="step-title"><b>12</b><div><h3>What is the final irrigation schedule with forecasting?</h3><p>This is the feasible CLOVER schedule after forecast delays and shared-pump conflicts are both resolved.</p></div></div>
+        <div id="step12ForecastFinal"></div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="13">
+        <div class="step-title"><b>13</b><div><h3>How do Baseline and CLOVER compare for every IMU and the whole farm?</h3><p>Inspect each IMU's SWD and irrigation history, then review the farm-level comparison and detailed delay / pump-wait events.</p></div></div>
+
+        <div class="imu-detail-panel embedded">
+          <div class="section-head imu-detail-head">
+            <div><h3>IMU detail</h3><span>Click an IMU to inspect its own soil water deficit and irrigation history</span></div>
+            <div><b id="imuDetailTitle">IMU 1</b><span id="imuDetailMeta"></span></div>
+          </div>
+          <div class="imu-tabs" id="imuTabs"></div>
+          <div class="imu-detail-stats" id="imuDetailStats"></div>
+          <div class="imu-detail-charts">
+            <div class="imu-chart-card"><div class="section-head"><h3>Soil water deficit</h3><span>Baseline vs CLOVER</span></div><svg id="imuSwdChart" viewBox="0 0 1100 265"></svg></div>
+            <div class="imu-chart-card"><div class="section-head"><h3>Irrigation amount</h3><span>application amount and timing</span></div><svg id="imuIrrigationChart" viewBox="0 0 1100 245"></svg></div>
+          </div>
+        </div>
+
+        <div class="comparison-grid">
+          <div class="result-table-wrap">
+            <div class="section-head"><h3>All IMUs</h3><span>45-day synthetic comparison</span></div>
+            <div class="scroll"><table class="result-table"><thead><tr><th>IMU</th><th>Crop</th><th>Area</th><th>Baseline irrig.</th><th>CLOVER irrig.</th><th>Saved</th><th>Forecast delays</th><th>Pump waits</th><th>Final SWD B/C</th></tr></thead><tbody id="resultBody"></tbody></table></div>
+          </div>
+          <div class="decision-wrap">
+            <div class="section-head"><h3>Detailed events</h3><span id="decisionCount"></span></div>
+            <div class="decision-list" id="decisionList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="workflow-step" data-workflow-step="14">
+        <div class="step-title"><b>14</b><div><h3>What is the overall CLOVER outcome?</h3><p>Finish with the farmer-facing summary: irrigation saved, effective rainfall gained, stress reduction, forecast delays and shared-pump conflicts.</p></div></div>
+        <div class="kpis" id="kpis"></div>
+        <div class="summary-charts">
+          <section class="chart-panel"><div class="section-head"><h3>Total farm irrigation</h3><span>Baseline vs CLOVER</span></div><svg id="irrigationChart" viewBox="0 0 1100 260"></svg></section>
+          <section class="chart-panel"><div class="section-head"><h3>Average farm SWD</h3><span>Baseline vs CLOVER</span></div><svg id="swdChart" viewBox="0 0 1100 285"></svg></section>
+        </div>
+      </section>
+    </div>
+
+    <div class="workflow-footer">
+      <button type="button" class="secondary" id="prevStepBtn">← Previous</button>
+      <div><span id="workflowPosition">Step 1 of 14</span></div>
+      <button type="button" class="primary" id="nextStepBtn">Next →</button>
     </div>
   </section>
 
