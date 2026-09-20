@@ -169,6 +169,31 @@
       </div>
     </div>
 
+    <section class="imu-detail-panel">
+      <div class="section-head imu-detail-head">
+        <div>
+          <h3>IMU detail</h3>
+          <span>Click an IMU to inspect its own soil water deficit and irrigation history</span>
+        </div>
+        <div>
+          <b id="imuDetailTitle">IMU 1</b>
+          <span id="imuDetailMeta"></span>
+        </div>
+      </div>
+      <div class="imu-tabs" id="imuTabs"></div>
+      <div class="imu-detail-stats" id="imuDetailStats"></div>
+      <div class="imu-detail-charts">
+        <div class="imu-chart-card">
+          <div class="section-head"><h3>Soil water deficit — selected IMU</h3><span>daily SWD · Baseline vs CLOVER</span></div>
+          <svg id="imuSwdChart" viewBox="0 0 1100 265"></svg>
+        </div>
+        <div class="imu-chart-card">
+          <div class="section-head"><h3>Irrigation amount — selected IMU</h3><span>application amount and timing</span></div>
+          <svg id="imuIrrigationChart" viewBox="0 0 1100 245"></svg>
+        </div>
+      </div>
+    </section>
+
     <div class="kpis" id="kpis"></div>
 
     <div class="charts-grid">
