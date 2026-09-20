@@ -180,6 +180,100 @@ function runStrategy(smart,scenario,p,rule='fixed'){
     logs:imus.flatMap(u=>u.logs.map(x=>({...x,imu:u.name}))).sort((a,b)=>a.day-b.day)
   };
 }
+
+function initialSwdFor(crop,idx){return clamp((CROP[crop]?.start||45)+(idx%3-1)*3,5,100)}
+function planRawDemand(smart,scenario,p,horizon){
+  const imus=scenario.imus.map((x,idx)=>({name:x[0],crop:x[1],idx,swd:initialSwdFor(x[1],idx),last:-999,left:scenario.limited?p.alloc:Infinity}));
+  const daily=[],delays=[];
+  for(let day=0;day<horizon;day++){
+    const w=state.weather[day],signal=forecastSignal(day,p),events=[];
+    imus.forEach(u=>{
+      const cf=CROP[u.crop]||CROP.P;u.swd=clamp(u.swd+w.etc*cf.factor,0,160);
+      if(u.crop==='F')return;
+      const need=u.swd>=p.tr,ready=(day-u.last)>=scenario.cycle,water=u.left>.01;
+      if(need&&ready&&water){
+        if(smart&&signal&&u.swd<p.force)delays.push({day,name:u.name,crop:u.crop,swd:u.swd,signal});
+        else{
+          const app=Math.min(scenario.net,u.left);
+          events.push({day,name:u.name,crop:u.crop,idx:u.idx,swd:u.swd,amount:app});
+          u.swd=Math.max(0,u.swd-app);u.last=day;if(isFinite(u.left))u.left-=app;
+        }
+      }
+    });
+    imus.forEach(u=>{u.swd=Math.max(0,u.swd-Math.min(w.actual,Math.max(0,u.swd)))});
+    daily.push(events);
+  }
+  return{daily,delays,imus};
+}
+function conflictsFrom(plan){return plan.daily.map((events,day)=>({day,events})).filter(x=>x.events.length>1)}
+function finalSchedule(strategy,horizon){
+  const daily=Array.from({length:horizon},()=>[]);
+  strategy.imus.forEach(u=>{for(let day=0;day<horizon;day++){const amount=u.irrigHistory[day]||0;if(amount>0)daily[day].push({name:u.name,crop:u.crop,amount})}});
+  return daily;
+}
+function pills(items,cls){return items.map(x=>'<span class="event-pill '+(cls||'')+'">'+x+'</span>').join('')}
+function scheduleTable(daily,emptyText){
+  const rows=daily.map((events,day)=>{
+    if(!events.length)return '';
+    return '<tr><td>'+date(day)+'</td><td>'+events.map(e=>'<b>'+e.name+'</b> ('+e.crop+')').join(', ')+'</td><td>'+events.map(e=>fmt(e.amount,1)+' mm').join(', ')+'</td></tr>';
+  }).filter(Boolean).join('');
+  return rows?'<div class="scroll"><table class="step-table"><thead><tr><th>Date</th><th>IMU(s)</th><th>Required / applied</th></tr></thead><tbody>'+rows+'</tbody></table></div>':'<div class="empty-step">'+emptyText+'</div>';
+}
+function renderConflictList(conflicts){
+  if(!conflicts.length)return '<div class="good-step">No shared-pump conflicts in this planning window.</div>';
+  return '<div class="conflict-list">'+conflicts.map(x=>'<div class="conflict-row"><b>'+date(x.day)+'</b><span>'+pills(x.events.map(e=>e.name+' · '+e.crop),'conflict')+'</span><small>'+x.events.length+' IMUs want the shared system on the same day</small></div>').join('')+'</div>';
+}
+function renderShiftList(strategy,horizon,ruleLabel){
+  const days=[];
+  for(let day=0;day<horizon;day++){
+    const waits=strategy.logs.filter(x=>x.day===day&&x.type==='capacity');if(!waits.length)continue;
+    const irr=strategy.logs.filter(x=>x.day===day&&x.type==='irr');days.push({day,waits,irr});
+  }
+  if(!days.length)return '<div class="good-step">No conflict shift was needed in this planning window.</div>';
+  return '<div class="shift-list">'+days.map(x=>'<div class="shift-row"><div class="shift-date">'+date(x.day)+'</div><div><span class="shift-label">Shared pump →</span> '+pills(x.irr.map(y=>y.imu),'selected')+'</div><div><span class="shift-label">Wait →</span> '+pills(x.waits.map(y=>y.imu),'waiting')+'</div><small>'+ruleLabel+'</small></div>').join('')+'</div>';
+}
+function renderCurrentSwd(s,p){
+  $('step1Swds').innerHTML=s.imus.map((x,idx)=>{
+    const swd=initialSwdFor(x[1],idx),scale=Math.max(100,p.tr+30),pct=clamp(swd/scale*100,0,100),due=x[1]!=='F'&&swd>=p.tr;
+    return '<div class="start-swd-card '+(due?'due':'')+'"><div><b>'+x[0]+'</b><span>'+x[1]+' · '+fmt(s.areaEach,2)+' ha</span></div><strong>'+fmt(swd,0)+' mm</strong><small>'+(x[1]==='F'?'Fallow':due?'At/above trigger':'Below '+p.tr+' mm trigger')+'</small><div class="start-swd-bar"><i style="width:'+pct+'%"></i><em style="left:'+clamp(p.tr/scale*100,0,100)+'%"></em></div></div>';
+  }).join('');
+}
+function renderForecastTable(horizon){
+  $('step7Forecast').innerHTML='<div class="scroll"><table class="step-table forecast-table"><thead><tr><th>Date</th><th>Forecast rain</th><th>Probability</th><th>Visual</th></tr></thead><tbody>'+state.weather.slice(0,horizon).map(w=>'<tr><td>'+date(w.day)+'</td><td><b>'+w.fc+' mm</b></td><td>'+w.prob+'%</td><td><div class="forecast-meter"><i style="width:'+clamp(w.fc/40*100,0,100)+'%"></i><em style="width:'+w.prob+'%"></em></div></td></tr>').join('')+'</tbody></table></div>';
+}
+function renderWorkflow(s,p,b,c,rawB,rawC){
+  const horizon=+$('planningHorizon').value;
+  $('horizonV').textContent=horizon;$('horizonText').textContent=horizon;document.querySelectorAll('.horizon-inline').forEach(x=>x.textContent=horizon);
+  renderCurrentSwd(s,p);
+  $('step2Settings').innerHTML='<div class="setting-summary"><div><span>Shared irrigation system</span><b>1 × '+s.system+'</b></div><div><span>Pump flow</span><b>'+s.pump+' L/s</b></div><div><span>Application per irrigation</span><b>'+fmt(s.net,1)+' mm</b></div><div><span>Minimum revisit / cycle</span><b>'+(s.cycleAssumption?'assumed ':'')+s.cycle+' day'+(s.cycle===1?'':'s')+'</b></div><div><span>IMUs sharing system</span><b>'+s.imus.length+'</b></div><div><span>Decision rule before forecast</span><b>SWD ≥ '+p.tr+' mm</b></div></div>';
+  $('step3BaselineDemand').innerHTML=scheduleTable(rawB.daily,'No IMU reaches the irrigation trigger in this planning window.');
+  $('step4BaselineConflicts').innerHTML=renderConflictList(conflictsFrom(rawB));
+  $('step5BaselineShift').innerHTML=renderShiftList(b,horizon,'Fixed rotating sequence: one IMU gets the shared system; other due IMUs wait.');
+  $('step6BaselineFinal').innerHTML=scheduleTable(finalSchedule(b,horizon),'No Baseline irrigation occurs in this planning window.');
+  renderForecastTable(horizon);
+  const q=state.weather.slice(0,horizon).filter(w=>w.fc>=p.rain&&w.prob>=p.prob);
+  $('step8ForecastRule').innerHTML='<div class="forecast-rule-box"><div class="rule-line"><span>Qualifying forecast</span><b>rain ≥ '+p.rain+' mm AND probability ≥ '+p.prob+'%</b></div><div class="rule-line"><span>Look-ahead</span><b>'+p.look+' day'+(p.look===1?'':'s')+'</b></div><div class="rule-line"><span>Forced irrigation</span><b>SWD ≥ '+p.force+' mm</b></div><div class="rule-result"><b>'+q.length+'</b> of the next '+horizon+' forecast days meet the amount + probability thresholds.</div></div>';
+  const forecastSched=scheduleTable(rawC.daily,'No irrigation remains after forecast-based delays in this planning window.');
+  const delayHtml=rawC.delays.length?'<div class="delay-summary"><b>Forecast delays before pump allocation</b>'+rawC.delays.map(x=>'<div><span>'+date(x.day)+' · '+x.name+'</span><small>SWD '+fmt(x.swd,0)+' mm → wait for '+x.signal.fc+' mm forecast at '+x.signal.prob+'% (+'+x.signal.ahead+' d)</small></div>').join('')+'</div>':'<div class="good-step">No raw irrigation requirement was delayed by the current forecast rule.</div>';
+  $('step9ForecastDemand').innerHTML=forecastSched+delayHtml;
+  $('step10ForecastConflicts').innerHTML=renderConflictList(conflictsFrom(rawC));
+  const ruleLabel=state.level===5?(state.priority==='fixed'?'Fixed rotating sequence':state.priority==='crop'?'Crop-stage priority':state.priority==='stress'?'Highest crop-stress priority':'Highest-SWD priority'):'Fixed rotating sequence';
+  $('step11ForecastShift').innerHTML=renderShiftList(c,horizon,ruleLabel);
+  $('step12ForecastFinal').innerHTML=scheduleTable(finalSchedule(c,horizon),'No CLOVER irrigation occurs in this planning window.');
+  updateWorkflowVisibility();
+}
+function updateWorkflowVisibility(){
+  document.querySelectorAll('.workflow-step').forEach(el=>el.classList.toggle('active',state.showAll||+el.dataset.workflowStep===state.workflowStep));
+  document.querySelectorAll('.workflow-dot').forEach(el=>el.classList.toggle('active',+el.dataset.step===state.workflowStep));
+  $('workflowPosition').textContent=state.showAll?'All 14 steps':'Step '+state.workflowStep+' of 14';
+  $('prevStepBtn').disabled=!state.showAll&&state.workflowStep===1;$('nextStepBtn').disabled=!state.showAll&&state.workflowStep===14;
+  $('showAllStepsBtn').textContent=state.showAll?'Show one step':'Show all steps';
+}
+function setWorkflowStep(step){
+  state.showAll=false;state.workflowStep=clamp(step,1,14);updateWorkflowVisibility();
+  const target=document.querySelector('.workflow-step.active');if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
 function selectedScenario(){return SCENARIOS[state.scenario]}
 function applyLevel(level){
   state.level=level;
