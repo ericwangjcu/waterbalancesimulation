@@ -164,18 +164,19 @@
     </div>
 
     <div class="workflow-nav" id="workflowNav">
-      <button type="button" class="workflow-dot active" data-step="1"><b>1</b><span>Current SWD</span></button><button type="button" class="workflow-dot " data-step="2"><b>2</b><span>Irrigation settings</span></button><button type="button" class="workflow-dot " data-step="3"><b>3</b><span>Irrigation required</span></button><button type="button" class="workflow-dot " data-step="4"><b>4</b><span>Conflict days</span></button><button type="button" class="workflow-dot " data-step="5"><b>5</b><span>Resolve conflicts</span></button><button type="button" class="workflow-dot " data-step="6"><b>6</b><span>Final no-forecast schedule</span></button><button type="button" class="workflow-dot " data-step="7"><b>7</b><span>Weather forecast</span></button><button type="button" class="workflow-dot " data-step="8"><b>8</b><span>Forecast settings</span></button><button type="button" class="workflow-dot " data-step="9"><b>9</b><span>Forecast-adjusted need</span></button><button type="button" class="workflow-dot " data-step="10"><b>10</b><span>New conflict days</span></button><button type="button" class="workflow-dot " data-step="11"><b>11</b><span>Resolve new conflicts</span></button><button type="button" class="workflow-dot " data-step="12"><b>12</b><span>Final forecast schedule</span></button><button type="button" class="workflow-dot " data-step="13"><b>13</b><span>Compare IMUs + farm</span></button><button type="button" class="workflow-dot " data-step="14"><b>14</b><span>Water-saving summary</span></button>
+      <button type="button" class="workflow-dot active" data-step="1"><b>1</b><span>SWD over time</span></button><button type="button" class="workflow-dot " data-step="2"><b>2</b><span>Irrigation settings</span></button><button type="button" class="workflow-dot " data-step="3"><b>3</b><span>Irrigation required</span></button><button type="button" class="workflow-dot " data-step="4"><b>4</b><span>Conflict days</span></button><button type="button" class="workflow-dot " data-step="5"><b>5</b><span>Resolve conflicts</span></button><button type="button" class="workflow-dot " data-step="6"><b>6</b><span>Final no-forecast schedule</span></button><button type="button" class="workflow-dot " data-step="7"><b>7</b><span>Weather forecast</span></button><button type="button" class="workflow-dot " data-step="8"><b>8</b><span>Forecast settings</span></button><button type="button" class="workflow-dot " data-step="9"><b>9</b><span>Forecast-adjusted need</span></button><button type="button" class="workflow-dot " data-step="10"><b>10</b><span>New conflict days</span></button><button type="button" class="workflow-dot " data-step="11"><b>11</b><span>Resolve new conflicts</span></button><button type="button" class="workflow-dot " data-step="12"><b>12</b><span>Final forecast schedule</span></button><button type="button" class="workflow-dot " data-step="13"><b>13</b><span>Compare IMUs + farm</span></button><button type="button" class="workflow-dot " data-step="14"><b>14</b><span>Water-saving summary</span></button>
     </div>
 
     <div class="workflow-steps" id="workflowSteps">
       <section class="workflow-step active" data-workflow-step="1">
-        <div class="step-title"><b>1</b><div><h3>What is the current SWD across all IMUs?</h3><p>Start from each IMU's crop stage and synthetic starting soil-water deficit before any future irrigation decision is made.</p></div></div>
+        <div class="step-title"><b>1</b><div><h3>How does SWD change over time for each IMU?</h3><p>Before adding the weather forecast, look at the no-forecast SWD trajectory for each IMU under the shared-pump schedule. The irrigation trigger from Step 2 is shown on the chart.</p></div></div>
         <div class="step1-chart-wrap">
           <div class="step-chart-head">
-            <div><b>Current soil water deficit by IMU</b><span>Higher SWD = drier soil</span></div>
-            <div class="chart-key"><span class="key-bar"></span>Current SWD <span class="key-trigger"></span>Irrigation trigger</div>
+            <div><b id="step1ChartTitle">IMU 1 soil water deficit</b><span>Higher SWD = drier soil · orange markers = irrigation</span></div>
+            <div class="chart-key"><span class="key-line"></span>SWD <span class="key-irrigation"></span>Irrigation <span class="key-trigger"></span>Trigger</div>
           </div>
-          <svg id="step1SwdChart" class="step1-swd-chart" viewBox="0 0 1100 360" role="img" aria-label="Current soil water deficit across IMUs"></svg>
+          <div class="step1-imu-tabs" id="step1ImuTabs"></div>
+          <svg id="step1SwdChart" class="step1-swd-chart" viewBox="0 0 1100 390" role="img" aria-label="Soil water deficit over time for selected IMU"></svg>
           <div class="step1-summary" id="step1SwdSummary"></div>
         </div>
       </section>
