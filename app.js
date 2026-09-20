@@ -65,7 +65,7 @@ const CROP={
   '3R':{factor:.92,start:53,priority:3,label:'3R'},
   '4R':{factor:.86,start:50,priority:2,label:'4R'}
 };
-let state={level:1,scenario:'tablelands_cp',valuePath:'nonlimited',seed:1056,weather:[],priority:'swd',allocation:120};
+let state={level:1,scenario:'tablelands_cp',valuePath:'nonlimited',seed:1056,weather:[],priority:'swd',allocation:120,selectedImu:0};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const fmt=(v,d=1)=>Number(v).toFixed(d);
 const date=i=>new Date(2026,8,7+i).toLocaleDateString('en-AU',{day:'2-digit',month:'short'});
@@ -116,11 +116,12 @@ function runStrategy(smart,scenario,p,rule='fixed'){
   const imus=scenario.imus.map((x,idx)=>({
     name:x[0],crop:x[1],area:scenario.areaEach,idx,
     swd:clamp((CROP[x[1]]?.start||45)+(idx%3-1)*3,5,100),last:-999,
-    left:scenario.limited?p.alloc:Infinity,irrig:0,effRain:0,stress:0,delays:0,capacityWaits:0,history:[],logs:[]
+    left:scenario.limited?p.alloc:Infinity,irrig:0,effRain:0,stress:0,delays:0,capacityWaits:0,history:[],irrigHistory:[],logs:[]
   }));
   const dailyIrr=[],avgSwd=[];let nextIdx=0;
   for(let day=0;day<N;day++){
     const w=state.weather[day],signal=forecastSignal(day,p),candidates=[];
+    imus.forEach(u=>u.irrigHistory.push(0));
     imus.forEach(u=>{
       const cf=CROP[u.crop]||CROP.P;
       u.swd=clamp(u.swd+w.etc*cf.factor,0,160);
@@ -154,7 +155,7 @@ function runStrategy(smart,scenario,p,rule='fixed'){
       const u=x.u;
       const app=Math.min(scenario.net,u.left);
       if(app>0){
-        u.irrig+=app;u.swd=Math.max(0,u.swd-app);u.last=day;if(isFinite(u.left))u.left-=app;
+        u.irrig+=app;u.irrigHistory[day]=app;u.swd=Math.max(0,u.swd-app);u.last=day;if(isFinite(u.left))u.left-=app;
         dayML+=app*u.area*.01;
         u.logs.push({day,type:'irr',text:`${u.name} irrigated ${fmt(app,1)} mm at SWD ${fmt(x.swd,0)} mm.`});
       }
@@ -228,6 +229,50 @@ function renderIMUs(s,b,c,p){
     </div>`;
   }).join('');
 }
+function safeLinePath(arr,x,y){
+  let d='',drawing=false;
+  arr.forEach((v,i)=>{
+    if(v===null||v===undefined||Number.isNaN(v)){drawing=false;return;}
+    d+=(drawing?'L':'M')+x(i).toFixed(1)+','+y(v).toFixed(1)+' ';drawing=true;
+  });
+  return d.trim();
+}
+function imuSwdChart(bu,cu,p){
+  const svg=$('imuSwdChart');clear(svg);
+  const vals=[...bu.history,...cu.history].filter(v=>v!==null&&v!==undefined);
+  if(!vals.length){
+    svg.append(E('text',{x:550,y:120,'text-anchor':'middle',class:'axistext'},'Fallow — no SWD irrigation trace in this setup'));
+    return;
+  }
+  const max=Math.max(100,p.force+20,...vals),d=dims(265,max,true);grid(svg,d,max,'SWD mm');
+  const tr=d.y(p.tr);
+  svg.append(E('line',{x1:d.L,y1:tr,x2:d.W-d.R,y2:tr,stroke:'#8da197','stroke-dasharray':'5 5'}));
+  svg.append(E('path',{d:safeLinePath(bu.history,d.x,d.y),fill:'none',stroke:'#85958e','stroke-width':2.2}));
+  svg.append(E('path',{d:safeLinePath(cu.history,d.x,d.y),fill:'none',stroke:'#2f8f63','stroke-width':3}));
+  svg.append(E('text',{x:730,y:16,class:'axistext'},'grey = Baseline · green = CLOVER · dashed = trigger'));
+}
+function imuIrrigationChart(bu,cu){
+  const svg=$('imuIrrigationChart');clear(svg);
+  const max=Math.max(1,...bu.irrigHistory,...cu.irrigHistory)*1.18,d=dims(245,max),bw=Math.max(3,d.pw/N*.32);grid(svg,d,max,'mm');
+  bu.irrigHistory.forEach((v,i)=>{if(v>0)svg.append(E('rect',{x:d.x(i)-bw,y:d.y(v),width:bw*.9,height:d.y(0)-d.y(v),fill:'#a6b2ac'}))});
+  cu.irrigHistory.forEach((v,i)=>{if(v>0)svg.append(E('rect',{x:d.x(i)+1,y:d.y(v),width:bw*.9,height:d.y(0)-d.y(v),fill:'#d78636'}))});
+  svg.append(E('text',{x:730,y:16,class:'axistext'},'grey = Baseline · orange = CLOVER'));
+}
+function renderIMUDetail(s,b,c,p){
+  if(state.selectedImu>=c.imus.length)state.selectedImu=0;
+  const idx=state.selectedImu,bu=b.imus[idx],cu=c.imus[idx];
+  $('imuTabs').innerHTML=c.imus.map((u,i)=>`<button type="button" class="imu-tab ${i===idx?'active':''}" data-imu="${i}">${u.name}<span>${u.crop}</span></button>`).join('');
+  document.querySelectorAll('.imu-tab').forEach(btn=>btn.addEventListener('click',()=>{state.selectedImu=+btn.dataset.imu;render()}));
+  $('imuDetailTitle').textContent=`${cu.name} · ${cu.crop}`;
+  $('imuDetailMeta').textContent=`${fmt(cu.area,2)} ha · shared ${s.system} · ${s.net.toFixed(1)} mm application`;
+  $('imuDetailStats').innerHTML=`
+    <div><span>Baseline irrigation</span><b>${fmt(bu.irrig,1)} mm</b></div>
+    <div><span>CLOVER irrigation</span><b>${fmt(cu.irrig,1)} mm</b></div>
+    <div><span>Forecast delays</span><b>${cu.delays}</b></div>
+    <div><span>Pump waits</span><b>${cu.capacityWaits}</b></div>
+  `;
+  imuSwdChart(bu,cu,p);imuIrrigationChart(bu,cu);
+}
 function renderKPIs(s,b,c){
   const saved=b.totalML-c.totalML,eff=c.effRainML-b.effRainML,stress=b.stress-c.stress;
   const cards=[
@@ -286,13 +331,13 @@ function render(){
   const b=runStrategy(false,s,p,'fixed');
   const cloverRule=state.level===5?state.priority:'fixed';
   const c=runStrategy(true,s,p,cloverRule);
-  renderIMUs(s,b,c,p);renderKPIs(s,b,c);renderResultTable(b,c);renderDecisionList(c);rainChart(p);irrigationChart(b,c);swdChart(b,c,p);
+  renderIMUs(s,b,c,p);renderIMUDetail(s,b,c,p);renderKPIs(s,b,c);renderResultTable(b,c);renderDecisionList(c);rainChart(p);irrigationChart(b,c);swdChart(b,c,p);
   document.querySelectorAll('.system-card').forEach(x=>x.classList.toggle('active',x.dataset.scenario===state.scenario));
   document.querySelectorAll('.value-card').forEach(x=>x.classList.toggle('active',x.dataset.valuepath===state.valuePath));
 }
 document.querySelectorAll('.level-tab').forEach(b=>b.addEventListener('click',()=>applyLevel(+b.dataset.level)));
-document.querySelectorAll('.system-card').forEach(b=>b.addEventListener('click',()=>{state.scenario=b.dataset.scenario;render()}));
-document.querySelectorAll('.value-card').forEach(b=>b.addEventListener('click',()=>{state.valuePath=b.dataset.valuepath;state.scenario=state.valuePath==='limited'?'mackay_traveller':'tablelands_cp';render()}));
+document.querySelectorAll('.system-card').forEach(b=>b.addEventListener('click',()=>{state.scenario=b.dataset.scenario;state.selectedImu=0;render()}));
+document.querySelectorAll('.value-card').forEach(b=>b.addEventListener('click',()=>{state.valuePath=b.dataset.valuepath;state.scenario=state.valuePath==='limited'?'mackay_traveller':'tablelands_cp';state.selectedImu=0;render()}));
 ['trigger','rainThreshold','probThreshold','lookahead','allocation'].forEach(id=>$(id).addEventListener('input',render));
 $('priorityRule').addEventListener('change',e=>{state.priority=e.target.value;render()});
 $('newWeatherBtn').addEventListener('click',()=>{state.seed=Math.floor(Math.random()*1e9);genWeather();render()});
