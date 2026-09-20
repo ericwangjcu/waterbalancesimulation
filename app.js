@@ -232,33 +232,50 @@ function renderShiftList(strategy,horizon,ruleLabel){
   if(!days.length)return '<div class="good-step">No conflict shift was needed in this planning window.</div>';
   return '<div class="shift-list">'+days.map(x=>'<div class="shift-row"><div class="shift-date">'+date(x.day)+'</div><div><span class="shift-label">Shared pump →</span> '+pills(x.irr.map(y=>y.imu),'selected')+'</div><div><span class="shift-label">Wait →</span> '+pills(x.waits.map(y=>y.imu),'waiting')+'</div><small>'+ruleLabel+'</small></div>').join('')+'</div>';
 }
-function renderCurrentSwd(s,p){
+function renderCurrentSwd(s,p,b,horizon){
+  if(state.selectedImu>=s.imus.length)state.selectedImu=0;
+  const idx=state.selectedImu,meta=s.imus[idx],u=b.imus[idx];
+  $('step1ImuTabs').innerHTML=s.imus.map((x,i)=>'<button type="button" class="step1-imu-tab '+(i===idx?'active':'')+'" data-step1-imu="'+i+'">'+x[0]+'<span>'+x[1]+'</span></button>').join('');
+  document.querySelectorAll('.step1-imu-tab').forEach(btn=>btn.addEventListener('click',()=>{state.selectedImu=+btn.dataset.step1Imu;render()}));
+  $('step1ChartTitle').textContent=meta[0]+' · '+meta[1]+' soil water deficit';
   const svg=$('step1SwdChart');clear(svg);
-  const values=s.imus.map((x,idx)=>({name:x[0],crop:x[1],swd:initialSwdFor(x[1],idx),fallow:x[1]==='F'}));
-  const W=1100,H=360,L=58,R=24,T=34,B=62,pw=W-L-R,ph=H-T-B;
-  const max=Math.max(100,p.tr+30,...values.map(x=>x.swd+10));
-  const x=i=>L+(i+.5)*pw/values.length;
-  const barW=Math.min(86,pw/values.length*.62);
-  const y=v=>T+ph-v/max*ph;
+  if(meta[1]==='F'){
+    svg.append(E('text',{x:550,y:185,'text-anchor':'middle',class:'axistext'},'Fallow IMU — no irrigation SWD trajectory is used in this demonstration.'));
+    $('step1SwdSummary').innerHTML='<b>'+meta[0]+'</b> is fallow and is not irrigated.';
+    return;
+  }
+  const start=initialSwdFor(meta[1],idx);
+  const vals=[start,...u.history.slice(0,horizon)];
+  const max=Math.max(100,p.force+20,...vals.filter(v=>v!==null&&v!==undefined));
+  const W=1100,H=390,L=62,R=24,T=34,B=58,pw=W-L-R,ph=H-T-B;
+  const x=i=>L+i*pw/Math.max(1,vals.length-1);
+  const y=v=>T+v/max*ph;
   for(let g=0;g<=5;g++){
     const v=max*g/5,yy=y(v);
     svg.append(E('line',{x1:L,y1:yy,x2:W-R,y2:yy,class:'gridline'}));
     svg.append(E('text',{x:L-10,y:yy+4,'text-anchor':'end',class:'axistext'},Math.round(v)));
   }
   svg.append(E('text',{x:12,y:18,class:'axistext'},'SWD (mm)'));
-  values.forEach((v,i)=>{
-    const xx=x(i),top=y(v.swd),h=y(0)-top;
-    svg.append(E('rect',{x:xx-barW/2,y:top,width:barW,height:h,rx:7,class:v.fallow?'swd-bar-fallow':v.swd>=p.tr?'swd-bar-due':'swd-bar'}));
-    svg.append(E('text',{x:xx,y:top-8,'text-anchor':'middle',class:'swd-value'},fmt(v.swd,0)+' mm'));
-    svg.append(E('text',{x:xx,y:H-34,'text-anchor':'middle',class:'swd-imuname'},v.name));
-    svg.append(E('text',{x:xx,y:H-18,'text-anchor':'middle',class:'swd-crop'},v.crop));
-  });
+  const labels=['Start',...Array.from({length:horizon},(_,i)=>date(i))];
+  const tickEvery=horizon<=7?1:horizon<=14?2:3;
+  labels.forEach((lab,i)=>{if(i===0||i===labels.length-1||i%tickEvery===0)svg.append(E('text',{x:x(i),y:H-18,'text-anchor':'middle',class:'axistext'},lab))});
   const ty=y(p.tr);
   svg.append(E('line',{x1:L,y1:ty,x2:W-R,y2:ty,class:'swd-trigger-line'}));
   svg.append(E('text',{x:W-R-4,y:ty-8,'text-anchor':'end',class:'swd-trigger-label'},'Irrigation trigger '+p.tr+' mm'));
-  const due=values.filter(v=>!v.fallow&&v.swd>=p.tr);
-  const near=values.filter(v=>!v.fallow&&v.swd<p.tr&&v.swd>=p.tr-10);
-  $('step1SwdSummary').innerHTML='<b>'+due.length+'</b> IMU'+(due.length===1?'':'s')+' at/above trigger'+(near.length?' · <b>'+near.length+'</b> within 10 mm of trigger':'')+'.';
+  svg.append(E('path',{d:safeLinePath(vals,x,y),fill:'none',class:'step1-swd-line'}));
+  vals.forEach((v,i)=>{if(v!==null&&v!==undefined)svg.append(E('circle',{cx:x(i),cy:y(v),r:3.2,class:'step1-swd-point'}))});
+  const irrigDays=[];
+  u.irrigHistory.slice(0,horizon).forEach((amount,day)=>{
+    if(amount>0){
+      const px=x(day+1),py=y(vals[day+1]);
+      irrigDays.push({day,amount});
+      svg.append(E('circle',{cx:px,cy:py,r:7.5,class:'step1-irrig-marker'}));
+      svg.append(E('text',{x:px,y:py-11,'text-anchor':'middle',class:'step1-irrig-label'},fmt(amount,0)+' mm'));
+    }
+  });
+  const maxSwd=Math.max(...vals.filter(v=>v!==null&&v!==undefined));
+  const above=vals.slice(1).filter(v=>v>=p.tr).length;
+  $('step1SwdSummary').innerHTML='<b>Start SWD '+fmt(start,0)+' mm</b> · maximum '+fmt(maxSwd,0)+' mm · '+irrigDays.length+' irrigation event'+(irrigDays.length===1?'':'s')+' over the next '+horizon+' days · '+above+' day'+(above===1?'':'s')+' finish at/above the '+p.tr+' mm trigger.';
 }
 function renderForecastTable(horizon){
   $('step7Forecast').innerHTML='<div class="scroll"><table class="step-table forecast-table"><thead><tr><th>Date</th><th>Forecast rain</th><th>Probability</th><th>Visual</th></tr></thead><tbody>'+state.weather.slice(0,horizon).map(w=>'<tr><td>'+date(w.day)+'</td><td><b>'+w.fc+' mm</b></td><td>'+w.prob+'%</td><td><div class="forecast-meter"><i style="width:'+clamp(w.fc/40*100,0,100)+'%"></i><em style="width:'+w.prob+'%"></em></div></td></tr>').join('')+'</tbody></table></div>';
@@ -266,7 +283,7 @@ function renderForecastTable(horizon){
 function renderWorkflow(s,p,b,c,rawB,rawC){
   const horizon=+$('planningHorizon').value;
   $('horizonV').textContent=horizon;$('horizonText').textContent=horizon;document.querySelectorAll('.horizon-inline').forEach(x=>x.textContent=horizon);
-  renderCurrentSwd(s,p);
+  renderCurrentSwd(s,p,b,horizon);
   $('step2Settings').innerHTML='<div class="setting-summary"><div><span>Shared irrigation system</span><b>1 × '+s.system+'</b></div><div><span>Pump flow</span><b>'+s.pump+' L/s</b></div><div><span>Application per irrigation</span><b>'+fmt(s.net,1)+' mm</b></div><div><span>Minimum revisit / cycle</span><b>'+(s.cycleAssumption?'assumed ':'')+s.cycle+' day'+(s.cycle===1?'':'s')+'</b></div><div><span>IMUs sharing system</span><b>'+s.imus.length+'</b></div><div><span>Decision rule before forecast</span><b>SWD ≥ '+p.tr+' mm</b></div></div>';
   $('step3BaselineDemand').innerHTML=scheduleTable(rawB.daily,'No IMU reaches the irrigation trigger in this planning window.');
   $('step4BaselineConflicts').innerHTML=renderConflictList(conflictsFrom(rawB));
