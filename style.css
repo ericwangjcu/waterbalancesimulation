@@ -264,3 +264,12 @@ footer{font-size:10px;color:#76877f;text-align:center;padding:15px 5px 5px}
   .workflow-footer{grid-template-columns:1fr 1fr}
   .workflow-footer>div{grid-column:1/-1;grid-row:1}
 }
+
+.farm-comparison{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:10px 0 11px}
+.farm-comparison>div{background:#fff;border:1px solid #e5ece8;border-radius:9px;padding:9px}
+.farm-comparison span{display:block;font-size:9px;color:#7b8c84}
+.farm-comparison b{display:block;font-size:12px;margin-top:2px}
+.workflow-dot:nth-child(n+7):nth-child(-n+12){border-top:3px solid #9ec7e2}
+.workflow-dot:nth-child(n+13){border-top:3px solid #9fceb3}
+@media(max-width:1100px){.farm-comparison{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.farm-comparison{grid-template-columns:1fr 1fr}}
