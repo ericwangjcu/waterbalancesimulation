@@ -233,10 +233,32 @@ function renderShiftList(strategy,horizon,ruleLabel){
   return '<div class="shift-list">'+days.map(x=>'<div class="shift-row"><div class="shift-date">'+date(x.day)+'</div><div><span class="shift-label">Shared pump →</span> '+pills(x.irr.map(y=>y.imu),'selected')+'</div><div><span class="shift-label">Wait →</span> '+pills(x.waits.map(y=>y.imu),'waiting')+'</div><small>'+ruleLabel+'</small></div>').join('')+'</div>';
 }
 function renderCurrentSwd(s,p){
-  $('step1Swds').innerHTML=s.imus.map((x,idx)=>{
-    const swd=initialSwdFor(x[1],idx),scale=Math.max(100,p.tr+30),pct=clamp(swd/scale*100,0,100),due=x[1]!=='F'&&swd>=p.tr;
-    return '<div class="start-swd-card '+(due?'due':'')+'"><div><b>'+x[0]+'</b><span>'+x[1]+' · '+fmt(s.areaEach,2)+' ha</span></div><strong>'+fmt(swd,0)+' mm</strong><small>'+(x[1]==='F'?'Fallow':due?'At/above trigger':'Below '+p.tr+' mm trigger')+'</small><div class="start-swd-bar"><i style="width:'+pct+'%"></i><em style="left:'+clamp(p.tr/scale*100,0,100)+'%"></em></div></div>';
-  }).join('');
+  const svg=$('step1SwdChart');clear(svg);
+  const values=s.imus.map((x,idx)=>({name:x[0],crop:x[1],swd:initialSwdFor(x[1],idx),fallow:x[1]==='F'}));
+  const W=1100,H=360,L=58,R=24,T=34,B=62,pw=W-L-R,ph=H-T-B;
+  const max=Math.max(100,p.tr+30,...values.map(x=>x.swd+10));
+  const x=i=>L+(i+.5)*pw/values.length;
+  const barW=Math.min(86,pw/values.length*.62);
+  const y=v=>T+ph-v/max*ph;
+  for(let g=0;g<=5;g++){
+    const v=max*g/5,yy=y(v);
+    svg.append(E('line',{x1:L,y1:yy,x2:W-R,y2:yy,class:'gridline'}));
+    svg.append(E('text',{x:L-10,y:yy+4,'text-anchor':'end',class:'axistext'},Math.round(v)));
+  }
+  svg.append(E('text',{x:12,y:18,class:'axistext'},'SWD (mm)'));
+  values.forEach((v,i)=>{
+    const xx=x(i),top=y(v.swd),h=y(0)-top;
+    svg.append(E('rect',{x:xx-barW/2,y:top,width:barW,height:h,rx:7,class:v.fallow?'swd-bar-fallow':v.swd>=p.tr?'swd-bar-due':'swd-bar'}));
+    svg.append(E('text',{x:xx,y:top-8,'text-anchor':'middle',class:'swd-value'},fmt(v.swd,0)+' mm'));
+    svg.append(E('text',{x:xx,y:H-34,'text-anchor':'middle',class:'swd-imuname'},v.name));
+    svg.append(E('text',{x:xx,y:H-18,'text-anchor':'middle',class:'swd-crop'},v.crop));
+  });
+  const ty=y(p.tr);
+  svg.append(E('line',{x1:L,y1:ty,x2:W-R,y2:ty,class:'swd-trigger-line'}));
+  svg.append(E('text',{x:W-R-4,y:ty-8,'text-anchor':'end',class:'swd-trigger-label'},'Irrigation trigger '+p.tr+' mm'));
+  const due=values.filter(v=>!v.fallow&&v.swd>=p.tr);
+  const near=values.filter(v=>!v.fallow&&v.swd<p.tr&&v.swd>=p.tr-10);
+  $('step1SwdSummary').innerHTML='<b>'+due.length+'</b> IMU'+(due.length===1?'':'s')+' at/above trigger'+(near.length?' · <b>'+near.length+'</b> within 10 mm of trigger':'')+'.';
 }
 function renderForecastTable(horizon){
   $('step7Forecast').innerHTML='<div class="scroll"><table class="step-table forecast-table"><thead><tr><th>Date</th><th>Forecast rain</th><th>Probability</th><th>Visual</th></tr></thead><tbody>'+state.weather.slice(0,horizon).map(w=>'<tr><td>'+date(w.day)+'</td><td><b>'+w.fc+' mm</b></td><td>'+w.prob+'%</td><td><div class="forecast-meter"><i style="width:'+clamp(w.fc/40*100,0,100)+'%"></i><em style="width:'+w.prob+'%"></em></div></td></tr>').join('')+'</tbody></table></div>';
