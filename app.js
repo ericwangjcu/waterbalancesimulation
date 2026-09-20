@@ -65,7 +65,7 @@ const CROP={
   '3R':{factor:.92,start:53,priority:3,label:'3R'},
   '4R':{factor:.86,start:50,priority:2,label:'4R'}
 };
-let state={level:1,scenario:'tablelands_cp',valuePath:'nonlimited',seed:1056,weather:[],priority:'swd',allocation:120,selectedImu:0};
+let state={level:1,scenario:'tablelands_cp',valuePath:'nonlimited',seed:1056,weather:[],priority:'swd',allocation:120,selectedImu:0,workflowStep:1,showAll:false};
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const fmt=(v,d=1)=>Number(v).toFixed(d);
 const date=i=>new Date(2026,8,7+i).toLocaleDateString('en-AU',{day:'2-digit',month:'short'});
@@ -276,7 +276,7 @@ function setWorkflowStep(step){
 
 function selectedScenario(){return SCENARIOS[state.scenario]}
 function applyLevel(level){
-  state.level=level;
+  state.level=level;state.workflowStep=1;state.showAll=false;state.selectedImu=0;
   document.querySelectorAll('.level-tab').forEach(b=>b.classList.toggle('active',+b.dataset.level===level));
   document.querySelectorAll('.level-page').forEach(p=>p.classList.toggle('active',+p.dataset.page===level));
   if(level===1)state.scenario='tablelands_cp';
@@ -420,20 +420,26 @@ function updateLabels(){
   $('triggerV').textContent=$('trigger').value;$('rainV').textContent=$('rainThreshold').value;$('probV').textContent=$('probThreshold').value;$('lookV').textContent=$('lookahead').value;$('allocationV').textContent=$('allocation').value;
 }
 function render(){
-  updateLabels();const s=selectedScenario(),p=controls();
+  updateLabels();const s=selectedScenario(),p=controls(),horizon=+$('planningHorizon').value;
   renderScenarioInfo(s);
   const b=runStrategy(false,s,p,'fixed');
   const cloverRule=state.level===5?state.priority:'fixed';
   const c=runStrategy(true,s,p,cloverRule);
-  renderIMUs(s,b,c,p);renderIMUDetail(s,b,c,p);renderKPIs(s,b,c);renderResultTable(b,c);renderDecisionList(c);rainChart(p);irrigationChart(b,c);swdChart(b,c,p);
+  const rawB=planRawDemand(false,s,p,horizon),rawC=planRawDemand(true,s,p,horizon);
+  renderWorkflow(s,p,b,c,rawB,rawC);
+  renderIMUDetail(s,b,c,p);renderKPIs(s,b,c);renderResultTable(b,c);renderDecisionList(c);irrigationChart(b,c);swdChart(b,c,p);
   document.querySelectorAll('.system-card').forEach(x=>x.classList.toggle('active',x.dataset.scenario===state.scenario));
   document.querySelectorAll('.value-card').forEach(x=>x.classList.toggle('active',x.dataset.valuepath===state.valuePath));
 }
 document.querySelectorAll('.level-tab').forEach(b=>b.addEventListener('click',()=>applyLevel(+b.dataset.level)));
-document.querySelectorAll('.system-card').forEach(b=>b.addEventListener('click',()=>{state.scenario=b.dataset.scenario;state.selectedImu=0;render()}));
-document.querySelectorAll('.value-card').forEach(b=>b.addEventListener('click',()=>{state.valuePath=b.dataset.valuepath;state.scenario=state.valuePath==='limited'?'mackay_traveller':'tablelands_cp';state.selectedImu=0;render()}));
-['trigger','rainThreshold','probThreshold','lookahead','allocation'].forEach(id=>$(id).addEventListener('input',render));
+document.querySelectorAll('.system-card').forEach(b=>b.addEventListener('click',()=>{state.scenario=b.dataset.scenario;state.selectedImu=0;state.workflowStep=1;state.showAll=false;render()}));
+document.querySelectorAll('.value-card').forEach(b=>b.addEventListener('click',()=>{state.valuePath=b.dataset.valuepath;state.scenario=state.valuePath==='limited'?'mackay_traveller':'tablelands_cp';state.selectedImu=0;state.workflowStep=1;state.showAll=false;render()}));
+['trigger','rainThreshold','probThreshold','lookahead','allocation','planningHorizon'].forEach(id=>$(id).addEventListener('input',render));
 $('priorityRule').addEventListener('change',e=>{state.priority=e.target.value;render()});
+document.querySelectorAll('.workflow-dot').forEach(b=>b.addEventListener('click',()=>setWorkflowStep(+b.dataset.step)));
+$('prevStepBtn').addEventListener('click',()=>setWorkflowStep(state.workflowStep-1));
+$('nextStepBtn').addEventListener('click',()=>setWorkflowStep(state.workflowStep+1));
+$('showAllStepsBtn').addEventListener('click',()=>{state.showAll=!state.showAll;updateWorkflowVisibility()});
 $('newWeatherBtn').addEventListener('click',()=>{state.seed=Math.floor(Math.random()*1e9);genWeather();render()});
 genWeather();applyLevel(1);
 })();
