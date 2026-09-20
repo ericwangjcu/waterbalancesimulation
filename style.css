@@ -141,3 +141,32 @@ footer{font-size:10px;color:#76877f;text-align:center;padding:15px 5px 5px}
   .imu-grid,.facts,.kpis{grid-template-columns:1fr}.workspace{padding:12px}
   .workspace-head{flex-direction:column}.farm-map{height:210px}
 }
+
+/* Per-IMU detail tabs */
+.imu-detail-panel{border:1px solid #e2ebe6;background:#fff;border-radius:14px;padding:14px;margin-bottom:12px}
+.imu-detail-head{align-items:flex-end}
+.imu-detail-head>div:last-child{text-align:right}
+.imu-detail-head>div:last-child b{display:block;font-size:13px}
+.imu-detail-head>div:last-child span{display:block;margin-top:2px}
+.imu-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 11px;padding-bottom:2px}
+.imu-tab{border:1px solid #dce7e1;background:#f8faf9;color:#50685d;border-radius:9px;padding:7px 10px;font-size:10.5px;font-weight:700}
+.imu-tab span{display:inline-block;margin-left:5px;padding:2px 5px;border-radius:5px;background:#edf3f0;color:#6b7f75;font-size:9px}
+.imu-tab.active{border-color:#9ecbb3;background:#eaf6ef;color:#245b40;box-shadow:0 3px 9px rgba(47,143,99,.10)}
+.imu-tab.active span{background:#fff;color:#337454}
+.imu-detail-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.imu-detail-stats>div{border:1px solid #e6ede9;border-radius:9px;background:#f8faf9;padding:8px 9px}
+.imu-detail-stats span{display:block;font-size:9px;color:#7b8c84}
+.imu-detail-stats b{display:block;font-size:15px;margin-top:2px}
+.imu-detail-charts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.imu-chart-card{border:1px solid #e8eeeb;border-radius:11px;padding:10px;background:#fff}
+.imu-chart-card svg{width:100%;height:auto;display:block}
+@media(max-width:850px){
+  .imu-detail-charts{grid-template-columns:1fr}
+  .imu-detail-stats{grid-template-columns:repeat(2,1fr)}
+  .imu-detail-head{align-items:flex-start}
+  .imu-detail-head>div:last-child{text-align:left}
+}
+@media(max-width:520px){
+  .imu-detail-stats{grid-template-columns:1fr 1fr}
+  .imu-tab{flex:1 1 auto}
+}
