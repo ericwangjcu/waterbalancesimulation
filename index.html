@@ -1,304 +1,136 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CLOVER farm irrigation demonstrator</title>
-<link rel="stylesheet" href="style.css">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CLOVER Irrigation Scheduling Framework Demo</title>
+<style>
+:root{
+  --navy:#0d2442; --blue:#2386d8; --green:#26a65b; --orange:#f5a623; --purple:#7b5bd6;
+  --red:#e85d6a; --teal:#1ca6a6; --ink:#243447; --muted:#66778b; --line:#d9e2ec; --soft:#f5f8fb;
+}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--ink);background:#fff}
+.wrap{max-width:1500px;margin:auto;padding:28px 32px 56px}
+h1{margin:0;color:var(--navy);font-size:38px;letter-spacing:-.5px} .sub{font-size:18px;color:var(--muted);margin:7px 0 22px}
+.topbar{display:flex;gap:16px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}.badge{background:#eaf4ff;color:#146db5;padding:7px 12px;border-radius:999px;font-weight:700;font-size:13px}
+.section-title{font-size:26px;color:var(--navy);margin:38px 0 14px}.hint{color:var(--muted);font-size:14px;margin:-6px 0 16px}
+.framework{display:grid;grid-template-columns:1.15fr 60px 1.15fr 60px 1.15fr 60px 1.15fr;gap:10px;align-items:stretch}
+.block{border:2px solid var(--line);border-radius:18px;padding:18px;background:white;min-height:180px;box-shadow:0 3px 12px rgba(13,36,66,.06)}
+.block h3{margin:0 0 12px;color:var(--navy);font-size:20px}.block ul{margin:0;padding-left:20px;line-height:1.55}.b1{border-color:#8dc7f5;background:#f5fbff}.b2{border-color:#8cd4a8;background:#f6fff8}.b3{border-color:#f5ca76;background:#fffaf0}.b4{border-color:#a99ae9;background:#faf8ff}
+.arrow{display:flex;align-items:center;justify-content:center;color:#8293a8;font-size:42px;font-weight:700}
+.role{margin-top:14px;padding:10px 12px;border-radius:10px;background:#eef6ff;color:#175f9e;font-weight:700;text-align:center}
+.controls{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;background:var(--soft);border:1px solid var(--line);padding:14px;border-radius:16px;margin-bottom:18px}.ctl label{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:6px}.ctl input,.ctl select{width:100%;padding:10px 11px;border:1px solid #c7d3df;border-radius:9px;background:#fff;font-size:15px}.ctl .unit{font-size:12px;color:var(--muted);margin-top:4px}
+.step{border:1px solid var(--line);border-radius:18px;margin:0 0 16px;overflow:hidden;background:#fff;box-shadow:0 2px 10px rgba(13,36,66,.045)}.step-head{display:flex;align-items:center;gap:12px;padding:14px 18px;background:#f8fafc;border-bottom:1px solid var(--line)}.num{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;background:var(--blue);flex:0 0 auto}.step h3{margin:0;color:var(--navy);font-size:20px}.step-body{padding:18px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{border:1px solid var(--line);border-radius:13px;padding:14px;background:#fff}.card h4{margin:0 0 10px;color:var(--navy)}
+table{width:100%;border-collapse:collapse;font-size:14px} th,td{border:1px solid #d8e1ea;padding:8px;text-align:center} th{background:#eef3f7;color:#33475b} td.left{text-align:left}.ok{background:#eaf8ef;color:#13713a;font-weight:700}.warn{background:#fff4dc;color:#9b6400;font-weight:700}.bad{background:#fdebee;color:#a33142;font-weight:700}.note{padding:10px 12px;border-radius:10px;background:#fff7e6;border-left:4px solid var(--orange);margin-top:12px}.success{background:#ecf9f0;border-left-color:var(--green)}
+.swds{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.chart{height:180px;border:1px solid var(--line);border-radius:12px;padding:9px;background:#fcfdff}.chart svg{width:100%;height:100%}.legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.timeline{display:grid;grid-template-columns:120px repeat(7,1fr);gap:3px;align-items:center}.tcell{padding:9px 6px;text-align:center;border-radius:7px;background:#f0f4f8;min-height:38px}.tlabel{text-align:left;font-weight:700;background:white}.irr{background:#dcefff;color:#0b65a4;font-weight:700}.rain{background:#e9f8ed;color:#14783e;font-weight:700}.delay{background:#fff0d5;color:#956100;font-weight:700}.conflict{outline:3px solid #e85d6a}
+.final{border:2px solid #7fbf95;background:#f7fff9}.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px}.big{font-size:25px;font-weight:800;color:var(--navy)}
+.footer{margin-top:28px;padding:16px;border-radius:14px;background:#f6f8fb;color:#5c6d80;font-size:13px}.small{font-size:12px;color:var(--muted)}
+@media(max-width:1000px){.framework{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}.controls,.grid3,.swds{grid-template-columns:1fr 1fr}.grid2,.compare{grid-template-columns:1fr}.timeline{grid-template-columns:90px repeat(7,minmax(70px,1fr));overflow-x:auto}}
+@media(max-width:650px){.wrap{padding:18px}.controls,.grid3,.swds{grid-template-columns:1fr}h1{font-size:30px}}
+@media print{.controls{display:none}.step{break-inside:avoid}.wrap{max-width:none;padding:10mm}.framework{grid-template-columns:1fr 35px 1fr 35px 1fr 35px 1fr}.arrow{font-size:28px}}
+</style>
 </head>
 <body>
-<div class="app">
-  <header class="header">
-    <div class="brand">
-      <div class="mark" aria-hidden="true"><span class="leaf a"></span><span class="leaf b"></span><span class="leaf c"></span></div>
-      <div>
-        <h1>CLOVER farm irrigation demonstrator</h1>
-        <div class="subtitle">Steve's farm scenarios + synthetic rainfall/SWD decision simulation</div>
-      </div>
-    </div>
-    <div class="badge" id="headerBadge">Level 1 · Tablelands Centre Pivot</div>
-  </header>
+<div class="wrap">
+  <div class="topbar"><div><h1>CLOVER Irrigation Scheduling Framework</h1><div class="sub">Meeting demo — from forecast + APSIM + farm setup to a practical irrigation schedule</div></div><div class="badge">Illustrative scenario — values can be changed live</div></div>
 
-  <nav class="level-nav" aria-label="CLOVER demonstration levels">
-    <button class="level-tab active" data-level="1"><b>1</b><span>Understand CLOVER</span></button>
-    <button class="level-tab" data-level="2"><b>2</b><span>Existing evidence</span></button>
-    <button class="level-tab" data-level="3"><b>3</b><span>Farmer value</span></button>
-    <button class="level-tab" data-level="4"><b>4</b><span>Farm scenarios</span></button>
-    <button class="level-tab" data-level="5"><b>5</b><span>Full CLOVER farm</span></button>
-  </nav>
+  <div class="section-title">Overall framework</div>
+  <div class="framework">
+    <div class="block b1"><h3>1. Weather forecast</h3><ul><li>Rainfall amount by day</li><li>Probability by day</li><li>Forecast horizon: 3 / 5 / 7 days</li></ul><div class="role">CSIRO forecast input</div></div>
+    <div class="arrow">→</div>
+    <div class="block b2"><h3>2. APSIM crop & soil status</h3><ul><li>Current soil water deficit (SWD)</li><li>Crop status / stress</li><li>Expected crop water requirement</li></ul><div class="role">CSIRO / APSIM input</div></div>
+    <div class="arrow">→</div>
+    <div class="block b3"><h3>3. CLOVER decision framework</h3><ul><li>Combine forecast + APSIM</li><li>Apply internal rainfall / probability rules</li><li>Calculate how much and when</li><li>Resolve conflicts using farm constraints</li></ul><div class="role">Integration & scheduling framework</div></div>
+    <div class="arrow">→</div>
+    <div class="block b4"><h3>4. Farm schedule & automation</h3><ul><li>Final plan for each paddock / IMU</li><li>Pumping capacity and rotation</li><li>Priority-based shifting</li><li>Send schedule to automation</li></ul><div class="role">Grower setup + operational output</div></div>
+  </div>
 
-  <section class="level-page active" data-page="1">
-    <div class="hero panel">
-      <div>
-        <div class="eyebrow">Level 1 — understand the basic CLOVER decision</div>
-        <h2>Same farm. Same crop demand. Same weather. One difference: CLOVER can see the short-term forecast.</h2>
-        <p>Start with Steve's Centre Pivot setup. The four equal-quarter IMUs have separate soil-water states, but they share one irrigation system. The pump/system services one eligible IMU at a time in a simple rotating sequence. Baseline irrigates when the SWD rule is met; CLOVER checks the rainfall forecast first and can wait.</p>
-      </div>
-      <div class="story-flow"><span>SWD says irrigation is due</span><i>→</i><span>Forecast checked</span><i>→</i><span>Shared pump chooses next eligible IMU</span><i>→</i><span>Irrigate now or wait</span></div>
-    </div>
-  </section>
+  <div class="section-title">Demo scenario settings</div>
+  <div class="hint">Change these during the meeting to demonstrate that the framework is adaptive rather than tied to one forecast, one APSIM setup or one farm.</div>
+  <div class="controls">
+    <div class="ctl"><label>Forecast horizon</label><select id="horizon"><option>3</option><option selected>5</option><option>7</option></select><div class="unit">days</div></div>
+    <div class="ctl"><label>Useful-rain probability threshold</label><input id="pth" type="number" value="60" min="0" max="100"><div class="unit">%</div></div>
+    <div class="ctl"><label>Useful rainfall threshold</label><input id="rth" type="number" value="10" min="0"><div class="unit">mm</div></div>
+    <div class="ctl"><label>Pump capacity</label><input id="capacity" type="number" value="2" min="1" max="3"><div class="unit">IMUs per day</div></div>
+    <div class="ctl"><label>Priority order</label><select id="priority"><option selected>P1 → P3 → P2</option><option>P3 → P1 → P2</option><option>P2 → P1 → P3</option></select><div class="unit">highest first</div></div>
+  </div>
 
-  <section class="level-page" data-page="2">
-    <div class="hero panel">
-      <div>
-        <div class="eyebrow">Level 2 — connect the demo to Steve's IrrigWeb result</div>
-        <h2>Mackay / Eton Centre Pivot: forecast ON vs forecast OFF</h2>
-        <p>This is the workbook's existing IrrigWeb example. The results below are workbook values, not produced by the synthetic web simulator. The simulation underneath uses the same four-IMU farm structure to let us explore the decision logic.</p>
-      </div>
-    </div>
-    <div class="evidence-grid">
-      <div class="panel evidence-table-wrap">
-        <div class="section-head"><h3>Workbook result — 2021 example</h3><span>Eton Sunwater · Black Earth PAW 170 mm</span></div>
-        <table class="evidence-table">
-          <thead><tr><th>IMU</th><th>Crop</th><th>Forecast ON</th><th>Forecast OFF</th><th>Saved</th><th>Yield ON/OFF</th></tr></thead>
-          <tbody>
-            <tr><td>CP1_B1</td><td>P</td><td>782 mm</td><td>850 mm</td><td>68 mm</td><td>160 / 160</td></tr>
-            <tr><td>CP1_B2</td><td>1R</td><td>496 mm</td><td>578 mm</td><td>82 mm</td><td>118 / 119</td></tr>
-            <tr><td>CP1_B3</td><td>2R</td><td>632 mm</td><td>680 mm</td><td>48 mm</td><td>133 / 134</td></tr>
-            <tr><td>CP1_B4</td><td>3R</td><td>502 mm</td><td>612 mm</td><td>110 mm</td><td>130 / 131</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="panel evidence-kpis">
-        <div class="evidence-kpi"><b>31.35 ML</b><span>Total irrigation saved in workbook example</span></div>
-        <div class="evidence-kpi"><b>0.77 ML/ha</b><span>Average saving</span></div>
-        <div class="evidence-kpi"><b>11.3%</b><span>Average irrigation saving</span></div>
-        <div class="source-warning">These are Steve's IrrigWeb workbook results. The interactive charts below remain a synthetic decision demonstration.</div>
-      </div>
-    </div>
-  </section>
+  <div class="section-title">Step-by-step framework</div>
 
-  <section class="level-page" data-page="3">
-    <div class="hero panel">
-      <div>
-        <div class="eyebrow">Level 3 — show the farmer why the same CLOVER decision has different value</div>
-        <h2>Water available: save irrigation. Water limited: make scarce irrigation last longer.</h2>
-        <p>Select the farmer situation. The simulator keeps the same forecast logic but changes what we watch as the main outcome.</p>
-      </div>
-    </div>
-    <div class="value-paths">
-      <button class="value-card active" data-valuepath="nonlimited">
-        <div class="eyebrow">Non-limited water</div><b>Efficiency pathway</b>
-        <span>More effective rain → less irrigation → lower pumping/water cost → similar production.</span>
-      </button>
-      <button class="value-card" data-valuepath="limited">
-        <div class="eyebrow">Limited water</div><b>Drought pathway</b>
-        <span>More effective rain → preserve scarce irrigation → less stress later → potential production protection.</span>
-      </button>
-    </div>
-  </section>
+  <div class="step"><div class="step-head"><div class="num">1</div><h3>Check current APSIM soil water deficit for each IMU</h3></div><div class="step-body">
+    <div class="swds" id="swdCharts"></div>
+    <div class="note">Purpose: show where each paddock is now, not just a single number. The trigger line can be changed and the irrigation requirement updates with it.</div>
+  </div></div>
 
-  <section class="level-page" data-page="4">
-    <div class="hero panel">
-      <div>
-        <div class="eyebrow">Level 4 — compare the actual irrigation systems in Steve's workbook</div>
-        <h2>Same CLOVER idea, very different physical farm constraints.</h2>
-        <p>Choose a system to load its IMUs, pump, application and cycle assumptions into the same synthetic rainfall/SWD engine.</p>
-      </div>
-    </div>
-    <div class="system-cards">
-      <button class="system-card active" data-scenario="tablelands_cp"><b>Tablelands Centre Pivot</b><span>4 IMUs · 40 L/s · 32.3 mm net · 4-day cycle</span><small>Cleanest forecast demonstration</small></button>
-      <button class="system-card" data-scenario="tablelands_lm"><b>Tablelands Lateral Move</b><span>6 IMUs · 50 L/s · 51.8 mm hydraulic net · 40 mm management cap · 6-day cycle</span><small>Operational timing + diesel story</small></button>
-      <button class="system-card" data-scenario="mackay_traveller"><b>Mackay Traveller</b><span>11 IMUs · 30 L/s · 30.4 mm net · 11-day cycle</span><small>Limited-water / drought story</small></button>
-      <button class="system-card" data-scenario="bundaberg_traveller"><b>Bundaberg Traveller</b><span>11 IMUs · 30 L/s · 30.4 mm net · 11-day cycle</span><small>Regional comparison; water status still to confirm</small></button>
-      <button class="system-card" data-scenario="furrow_7"><b>Furrow — 7 IMUs</b><span>7 IMUs · 55 L/s · 110.9 mm net</span><small>30.0 ha workbook setup; cycle not specified</small></button>
-      <button class="system-card" data-scenario="furrow_9"><b>Furrow — 9 IMUs</b><span>9 IMUs · 55 L/s · 110.9 mm net</span><small>38.6 ha workbook setup; cycle not specified</small></button>
-    </div>
-  </section>
+  <div class="step"><div class="step-head"><div class="num">2</div><h3>Set irrigation trigger and target for each IMU</h3></div><div class="step-body">
+    <table id="triggerTable"><thead><tr><th>IMU</th><th>Current SWD</th><th>Trigger</th><th>Target after irrigation</th><th>Status</th></tr></thead><tbody></tbody></table>
+  </div></div>
 
-  <section class="level-page" data-page="5">
-    <div class="hero panel">
-      <div>
-        <div class="eyebrow">Level 5 — full CLOVER farm decision</div>
-        <h2>When several IMUs need irrigation and one pump cannot service them all, which IMU goes first?</h2>
-        <p>This level keeps Steve's 11-IMU Mackay traveller geometry and shared irrigation capacity. Baseline uses the simple rotating sequence used in Levels 1–4. CLOVER first decides whether irrigation should proceed or wait for forecast rain, then the selected priority rule chooses among eligible IMUs.</p>
-      </div>
-      <div class="priority-control">
-        <label for="priorityRule">Priority rule</label>
-        <select id="priorityRule">
-          <option value="fixed">Fixed IMU order</option>
-          <option value="crop">Crop stage</option>
-          <option value="swd" selected>Highest SWD</option>
-          <option value="stress">Highest crop stress</option>
-        </select>
-        <div class="assumption-note">The fixed rotating sequence is the simple baseline rule. Crop stage, highest SWD and highest crop stress are our alternative simulation rules; Steve's workbook defines the farm/IMUs but does not prescribe these priority algorithms.</div>
-      </div>
-    </div>
-  </section>
+  <div class="step"><div class="step-head"><div class="num">3</div><h3>Calculate irrigation requirement before considering forecast</h3></div><div class="step-body">
+    <div class="grid3" id="needCards"></div>
+    <div class="note">Simple demo logic: irrigation amount = current SWD − target SWD when the trigger is exceeded. In the final system, this can be replaced by the APSIM-derived irrigation requirement.</div>
+  </div></div>
 
-  <section class="workspace panel">
-    <div class="workspace-head">
-      <div>
-        <div class="eyebrow">Interactive simulation</div>
-        <h2 id="scenarioName">Tablelands — Centre Pivot</h2>
-        <p id="scenarioSummary"></p>
-      </div>
-      <div class="workspace-actions">
-        <button class="secondary" id="newWeatherBtn">New synthetic weather</button>
-      </div>
-    </div>
+  <div class="step"><div class="step-head"><div class="num">4</div><h3>Create the preliminary schedule without forecast</h3></div><div class="step-body"><div id="baseTimeline"></div></div></div>
 
-    <div class="farm-context">
-      <div class="map-card">
-        <div class="map-head"><div><div class="eyebrow">Regional context</div><b id="mapRegionTitle"></b></div><a id="mapLink" target="_blank" rel="noopener">Google Maps ↗</a></div>
-        <iframe id="farmMap" class="farm-map" title="Regional Google map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        <div class="map-caption" id="mapCaption"></div>
-        <div class="source-warning mini">Regional context only — not actual farm coordinates.</div>
-      </div>
-      <div class="setup-card">
-        <div class="section-head"><h3>Steve's farm setup</h3><span id="sourceLabel">Farm Scenarios workbook</span></div>
-        <div class="facts" id="scenarioFacts"></div>
-        <div class="setup-note" id="scenarioNote"></div>
-      </div>
-    </div>
+  <div class="step"><div class="step-head"><div class="num">5</div><h3>Identify operational conflicts</h3></div><div class="step-body">
+    <div id="baseConflict"></div><div class="note">A conflict occurs when the requested irrigations exceed the farm's pumping / delivery capacity on the same day.</div>
+  </div></div>
 
-    <div class="workflow-head">
-      <div>
-        <div class="eyebrow">CLOVER decision workflow</div>
-        <h3>Follow the irrigation decision from current SWD to the final forecast-informed schedule</h3>
-        <p>Only one step is shown at a time. The 45-day synthetic model still runs underneath, but the workflow focuses on the next <b><span id="horizonText">14</span> days</b> so the logic is easier to follow.</p>
-      </div>
-      <div class="workflow-actions">
-        <button class="secondary" id="showAllStepsBtn" type="button">Show all steps</button>
-      </div>
-    </div>
+  <div class="step"><div class="step-head"><div class="num">6</div><h3>Shift irrigation using farm priority rules</h3></div><div class="step-body"><div id="shiftedBase"></div><div class="note">Farm constraints come from Steve / grower setup: IMU layout, pumping capacity, rotation rules and crop priority.</div></div></div>
 
-    <div class="workflow-nav" id="workflowNav">
-      <button type="button" class="workflow-dot active" data-step="1"><b>1</b><span>SWD over time</span></button><button type="button" class="workflow-dot " data-step="2"><b>2</b><span>Irrigation settings</span></button><button type="button" class="workflow-dot " data-step="3"><b>3</b><span>Irrigation required</span></button><button type="button" class="workflow-dot " data-step="4"><b>4</b><span>Conflict days</span></button><button type="button" class="workflow-dot " data-step="5"><b>5</b><span>Resolve conflicts</span></button><button type="button" class="workflow-dot " data-step="6"><b>6</b><span>Final no-forecast schedule</span></button><button type="button" class="workflow-dot " data-step="7"><b>7</b><span>Weather forecast</span></button><button type="button" class="workflow-dot " data-step="8"><b>8</b><span>Forecast settings</span></button><button type="button" class="workflow-dot " data-step="9"><b>9</b><span>Forecast-adjusted need</span></button><button type="button" class="workflow-dot " data-step="10"><b>10</b><span>New conflict days</span></button><button type="button" class="workflow-dot " data-step="11"><b>11</b><span>Resolve new conflicts</span></button><button type="button" class="workflow-dot " data-step="12"><b>12</b><span>Final forecast schedule</span></button><button type="button" class="workflow-dot " data-step="13"><b>13</b><span>Compare IMUs + farm</span></button><button type="button" class="workflow-dot " data-step="14"><b>14</b><span>Water-saving summary</span></button>
-    </div>
+  <div class="step"><div class="step-head"><div class="num">7</div><h3>Read the rainfall forecast for the selected horizon</h3></div><div class="step-body"><table id="forecastTable"><thead><tr><th>Day</th><th>Rainfall</th><th>Probability</th><th>Useful rain?</th></tr></thead><tbody></tbody></table></div></div>
 
-    <div class="workflow-steps" id="workflowSteps">
-      <section class="workflow-step active" data-workflow-step="1">
-        <div class="step-title"><b>1</b><div><h3>How does SWD change over time for each IMU?</h3><p>Before adding the weather forecast, look at the no-forecast SWD trajectory for each IMU under the shared-pump schedule. The irrigation trigger from Step 2 is shown on the chart.</p></div></div>
-        <div class="step1-chart-wrap">
-          <div class="step-chart-head">
-            <div><b id="step1ChartTitle">IMU 1 soil water deficit</b><span>Higher SWD = drier soil · orange markers = irrigation</span></div>
-            <div class="chart-key"><span class="key-line"></span>SWD <span class="key-irrigation"></span>Irrigation <span class="key-trigger"></span>Trigger</div>
-          </div>
-          <div class="step1-imu-tabs" id="step1ImuTabs"></div>
-          <svg id="step1SwdChart" class="step1-swd-chart" viewBox="0 0 1100 390" role="img" aria-label="Soil water deficit over time for selected IMU"></svg>
-          <div class="step1-summary" id="step1SwdSummary"></div>
-        </div>
-      </section>
+  <div class="step"><div class="step-head"><div class="num">8</div><h3>Apply internal CLOVER forecast rules</h3></div><div class="step-body">
+    <div class="grid2"><div class="card"><h4>Demo rule</h4><div class="big" id="ruleText"></div><p>If both conditions are met, CLOVER can delay irrigation and reassess after the forecast rainfall.</p></div><div class="card"><h4>Final product direction</h4><p>The grower would not need to choose these thresholds. CLOVER would determine suitable regional / system parameters internally using forecast performance and historical evidence.</p></div></div>
+  </div></div>
 
-      <section class="workflow-step" data-workflow-step="2">
-        <div class="step-title"><b>2</b><div><h3>What irrigation settings are we using?</h3><p>These are the rules that determine when an IMU needs water and how much one shared pump/system can apply.</p></div></div>
-        <div class="step-two-col">
-          <div class="step-card">
-            <div class="control"><label><span>SWD irrigation trigger</span><b><span id="triggerV">60</span> mm</b></label><input id="trigger" type="range" min="40" max="90" step="5" value="60"></div>
-            <div class="control" id="allocationControl"><label><span>Demo-window irrigation available</span><b><span id="allocationV">120</span> mm / IMU</b></label><input id="allocation" type="range" min="30" max="300" step="10" value="120"></div>
-            <div class="control"><label><span>Planning window</span><b><span id="horizonV">14</span> days</b></label><input id="planningHorizon" type="range" min="7" max="21" step="7" value="14"></div>
-          </div>
-          <div class="step-card" id="step2Settings"></div>
-        </div>
-      </section>
+  <div class="step"><div class="step-head"><div class="num">9</div><h3>Recalculate paddock irrigation using forecast information</h3></div><div class="step-body"><div id="forecastDecisionCards" class="grid3"></div></div></div>
 
-      <section class="workflow-step" data-workflow-step="3">
-        <div class="step-title"><b>3</b><div><h3>Which IMUs would require irrigation over the next <span class="horizon-inline">14</span> days without using the forecast?</h3><p>This is the <b>raw irrigation requirement</b> before the shared-pump constraint is applied. More than one IMU can therefore appear on the same day.</p></div></div>
-        <div id="step3BaselineDemand"></div>
-      </section>
+  <div class="step"><div class="step-head"><div class="num">10</div><h3>Build the forecast-informed preliminary schedule</h3></div><div class="step-body"><div id="forecastTimeline"></div></div></div>
 
-      <section class="workflow-step" data-workflow-step="4">
-        <div class="step-title"><b>4</b><div><h3>Which days have an irrigation conflict?</h3><p>A conflict occurs when two or more IMUs require the one shared irrigation system on the same day.</p></div></div>
-        <div id="step4BaselineConflicts"></div>
-      </section>
+  <div class="step"><div class="step-head"><div class="num">11</div><h3>Check new conflicts after forecast adjustments</h3></div><div class="step-body"><div id="forecastConflict"></div></div></div>
 
-      <section class="workflow-step" data-workflow-step="5">
-        <div class="step-title"><b>5</b><div><h3>How do we shift irrigation to remove those conflicts?</h3><p>For the simple baseline, the shared pump follows the fixed rotating IMU sequence. One IMU irrigates; the others wait for the next available slot.</p></div></div>
-        <div id="step5BaselineShift"></div>
-      </section>
+  <div class="step"><div class="step-head"><div class="num">12</div><h3>Apply farm constraints again and create the final operational schedule</h3></div><div class="step-body"><div id="finalTimeline"></div><div class="note success">This is the schedule passed to the automation layer: which IMU, when to irrigate, and how much.</div></div></div>
 
-      <section class="workflow-step" data-workflow-step="6">
-        <div class="step-title"><b>6</b><div><h3>What is the final irrigation schedule without forecast information?</h3><p>This is the feasible Baseline schedule after shared-pump conflicts have been resolved.</p></div></div>
-        <div id="step6BaselineFinal"></div>
-      </section>
+  <div class="step final"><div class="step-head"><div class="num" style="background:var(--green)">13</div><h3>Compare the two strategies</h3></div><div class="step-body">
+    <div class="compare"><div class="card"><h4>Without forecast</h4><div id="summaryBase"></div></div><div class="card"><h4>With forecast</h4><div id="summaryForecast"></div></div></div>
+    <div style="margin-top:16px"><table id="compareTable"><thead><tr><th>IMU</th><th>Without forecast</th><th>With forecast</th><th>Why changed?</th></tr></thead><tbody></tbody></table></div>
+  </div></div>
 
-      <section class="workflow-step" data-workflow-step="7">
-        <div class="step-title"><b>7</b><div><h3>What does the rainfall forecast look like over the coming <span class="horizon-inline">14</span> days?</h3><p>Now add forecast rainfall amount and probability. At this step the forecast is information only; we have not changed irrigation yet.</p></div></div>
-        <div id="step7Forecast"></div>
-      </section>
-
-      <section class="workflow-step" data-workflow-step="8">
-        <div class="step-title"><b>8</b><div><h3>What forecast rule should CLOVER use?</h3><p>A forecast qualifies only when both the rainfall amount and probability thresholds are met within the look-ahead window.</p></div></div>
-        <div class="step-two-col">
-          <div class="step-card">
-            <div class="control"><label><span>Forecast rain threshold</span><b><span id="rainV">20</span> mm</b></label><input id="rainThreshold" type="range" min="5" max="40" step="5" value="20"></div>
-            <div class="control"><label><span>Forecast probability</span><b><span id="probV">70</span>%</b></label><input id="probThreshold" type="range" min="40" max="90" step="5" value="70"></div>
-            <div class="control"><label><span>Forecast look-ahead</span><b><span id="lookV">3</span> days</b></label><input id="lookahead" type="range" min="1" max="7" step="1" value="3"></div>
-          </div>
-          <div class="step-card" id="step8ForecastRule"></div>
-        </div>
-      </section>
-
-      <section class="workflow-step" data-workflow-step="9">
-        <div class="step-title"><b>9</b><div><h3>How does the forecast change the irrigation requirement?</h3><p>IMUs that would otherwise irrigate can now be delayed when qualifying rainfall is forecast, unless the soil is too dry to safely wait.</p></div></div>
-        <div id="step9ForecastDemand"></div>
-      </section>
-
-      <section class="workflow-step" data-workflow-step="10">
-        <div class="step-title"><b>10</b><div><h3>What conflict days remain after forecast-based delays?</h3><p>Forecasting can remove some conflicts, create different ones, or leave the same competition for the shared pump.</p></div></div>
-        <div id="step10ForecastConflicts"></div>
-      </section>
-
-      <section class="workflow-step" data-workflow-step="11">
-        <div class="step-title"><b>11</b><div><h3>How do we shift irrigation to remove the remaining conflicts?</h3><p>Levels 1–4 use the same fixed rotating sequence as Baseline. Level 5 can instead apply the selected priority rule.</p></div></div>
-        <div id="step11ForecastShift"></div>
-      </section>
-
-      <section class="workflow-step" data-workflow-step="12">
-        <div class="step-title"><b>12</b><div><h3>What is the final irrigation schedule with forecasting?</h3><p>This is the feasible CLOVER schedule after forecast delays and shared-pump conflicts are both resolved.</p></div></div>
-        <div id="step12ForecastFinal"></div>
-      </section>
-
-      <section class="workflow-step" data-workflow-step="13">
-        <div class="step-title"><b>13</b><div><h3>How do Baseline and CLOVER compare for every IMU and the whole farm?</h3><p>Inspect each IMU's SWD and irrigation history, then review the farm-level comparison and detailed delay / pump-wait events.</p></div></div>
-
-        <div class="imu-detail-panel embedded">
-          <div class="section-head imu-detail-head">
-            <div><h3>IMU detail</h3><span>Click an IMU to inspect its own soil water deficit and irrigation history</span></div>
-            <div><b id="imuDetailTitle">IMU 1</b><span id="imuDetailMeta"></span></div>
-          </div>
-          <div class="imu-tabs" id="imuTabs"></div>
-          <div class="imu-detail-stats" id="imuDetailStats"></div>
-          <div class="imu-detail-charts">
-            <div class="imu-chart-card"><div class="section-head"><h3>Soil water deficit</h3><span>Baseline vs CLOVER</span></div><svg id="imuSwdChart" viewBox="0 0 1100 265"></svg></div>
-            <div class="imu-chart-card"><div class="section-head"><h3>Irrigation amount</h3><span>application amount and timing</span></div><svg id="imuIrrigationChart" viewBox="0 0 1100 245"></svg></div>
-          </div>
-        </div>
-
-        <div class="farm-comparison" id="farmComparison"></div>
-
-        <div class="comparison-grid">
-          <div class="result-table-wrap">
-            <div class="section-head"><h3>All IMUs</h3><span>45-day synthetic comparison</span></div>
-            <div class="scroll"><table class="result-table"><thead><tr><th>IMU</th><th>Crop</th><th>Area</th><th>Baseline irrig.</th><th>CLOVER irrig.</th><th>Saved</th><th>Forecast delays</th><th>Pump waits</th><th>Final SWD B/C</th></tr></thead><tbody id="resultBody"></tbody></table></div>
-          </div>
-          <div class="decision-wrap">
-            <div class="section-head"><h3>Detailed events</h3><span id="decisionCount"></span></div>
-            <div class="decision-list" id="decisionList"></div>
-          </div>
-        </div>
-      </section>
-
-      <section class="workflow-step" data-workflow-step="14">
-        <div class="step-title"><b>14</b><div><h3>What is the overall CLOVER outcome?</h3><p>Finish with the farmer-facing summary: irrigation saved, effective rainfall gained, stress reduction, forecast delays and shared-pump conflicts.</p></div></div>
-        <div class="kpis" id="kpis"></div>
-        <div class="summary-charts">
-          <section class="chart-panel"><div class="section-head"><h3>Total farm irrigation</h3><span>Baseline vs CLOVER</span></div><svg id="irrigationChart" viewBox="0 0 1100 260"></svg></section>
-          <section class="chart-panel"><div class="section-head"><h3>Average farm SWD</h3><span>Baseline vs CLOVER</span></div><svg id="swdChart" viewBox="0 0 1100 285"></svg></section>
-        </div>
-      </section>
-    </div>
-
-    <div class="workflow-footer">
-      <button type="button" class="secondary" id="prevStepBtn">← Previous</button>
-      <div><span id="workflowPosition">Step 1 of 14</span></div>
-      <button type="button" class="primary" id="nextStepBtn">Next →</button>
-    </div>
-  </section>
-
-  <footer>Demonstration only. Workbook values define farm/system scenarios. Rainfall, starting soil water deficit, crop-water demand proxy and the web decision engine are synthetic until replaced by IrrigWeb/APSIM/forecast-service outputs.</footer>
+  <div class="footer"><b>Meeting message:</b> CSIRO supplies the forecast and APSIM outputs. Grower/farm information defines the operational constraints. CLOVER is the adaptable decision and integration framework in the middle — it converts those inputs into a practical schedule that can then be sent to automation. The values on this page are illustrative only.</div>
 </div>
-<script src="app.js"></script>
-</body>
-</html>
+<script>
+const imus=[
+ {id:'P1', current:46, trigger:40, target:20, priority:1, color:'#2386d8', history:[26,30,34,38,42,46]},
+ {id:'P2', current:36, trigger:35, target:20, priority:3, color:'#26a65b', history:[20,23,27,30,33,36]},
+ {id:'P3', current:50, trigger:45, target:22, priority:2, color:'#f29b38', history:[29,33,37,42,46,50]}
+];
+const forecast=[{rain:0,p:10},{rain:18,p:70},{rain:4,p:40},{rain:0,p:20},{rain:22,p:75},{rain:3,p:35},{rain:0,p:15}];
+function val(id){return +document.getElementById(id).value}
+function useful(day){return day.rain>=val('rth') && day.p>=val('pth')}
+function need(i){return Math.max(0,i.current-i.target)}
+function needsIrr(i){return i.current>=i.trigger}
+function chart(i){const max=60,w=320,h=150,p=24; const pts=i.history.map((v,x)=>`${p+x*(w-2*p)/(i.history.length-1)},${h-p-v/max*(h-2*p)}`).join(' '); const ty=h-p-i.trigger/max*(h-2*p); return `<div><div class="card"><h4>${i.id}</h4><div class="chart"><svg viewBox="0 0 ${w} ${h}"><line x1="${p}" y1="${h-p}" x2="${w-p}" y2="${h-p}" stroke="#cad5e0"/><line x1="${p}" y1="${p}" x2="${p}" y2="${h-p}" stroke="#cad5e0"/><line x1="${p}" y1="${ty}" x2="${w-p}" y2="${ty}" stroke="#e85d6a" stroke-width="2" stroke-dasharray="6,4"/><polyline fill="none" stroke="${i.color}" stroke-width="4" points="${pts}"/><circle cx="${w-p}" cy="${h-p-i.current/max*(h-2*p)}" r="5" fill="${i.color}"/><text x="${w-p-4}" y="${ty-6}" font-size="11" text-anchor="end" fill="#a33142">Trigger ${i.trigger} mm</text></svg></div><div class="legend"><span><span class="dot" style="background:${i.color}"></span>SWD history</span><span><span class="dot" style="background:#e85d6a"></span>Trigger</span></div><div style="margin-top:8px"><b>Current SWD: ${i.current} mm</b></div></div></div>`}
+function timeline(schedule, rainDays=[]){let h=`<div class="timeline"><div class="tcell tlabel">IMU</div>`; for(let d=1;d<=7;d++)h+=`<div class="tcell">Day ${d}</div>`; imus.forEach(i=>{h+=`<div class="tcell tlabel">${i.id}</div>`; for(let d=1;d<=7;d++){let cls='tcell',txt='—'; let x=schedule.find(s=>s.id===i.id&&s.day===d); if(x){cls+=' irr';txt=x.amount+' mm'} if(rainDays.includes(d)){cls+=' rain'; if(!x)txt='Rain'} h+=`<div class="${cls}">${txt}</div>`} }); return h+'</div>'}
+function priorityList(){const p=document.getElementById('priority').value.match(/P\d/g);return p}
+function resolve(schedule){let cap=val('capacity'), order=priorityList(); let out=[]; let pending=[...schedule].sort((a,b)=>a.day-b.day || order.indexOf(a.id)-order.indexOf(b.id)); let used={}; for(const s of pending){let d=s.day; while((used[d]||0)>=cap && d<8)d++; used[d]=(used[d]||0)+1; out.push({...s,day:d})} return out}
+function baseSchedule(){return imus.filter(needsIrr).map(i=>({id:i.id,day:1,amount:need(i)}))}
+function forecastSchedule(){const H=val('horizon'); const nextUseful=forecast.slice(0,H).findIndex(useful); const rainDay=nextUseful>=0?nextUseful+1:null; return imus.filter(needsIrr).map(i=>{let day=1; let amount=need(i); let reason='Irrigate now'; if(rainDay && rainDay<=3 && i.id!=='P1'){day=Math.min(rainDay+1,H+1); amount=Math.max(0,amount-forecast[rainDay-1].rain); reason=`Delay for useful rain on Day ${rainDay}`;} return {id:i.id,day,amount,reason}}).filter(s=>s.amount>0)}
+function conflictText(s){let counts={};s.forEach(x=>counts[x.day]=(counts[x.day]||0)+1); let ds=Object.keys(counts).filter(d=>counts[d]>val('capacity')); return ds.length?`<div class="note"><b>Conflict detected:</b> ${ds.map(d=>'Day '+d+' has '+counts[d]+' irrigations').join('; ')} but capacity is only ${val('capacity')} IMU(s) per day.</div>`:`<div class="note success"><b>No capacity conflict.</b> Current requests fit within ${val('capacity')} IMU(s) per day.</div>`}
+function render(){
+ document.getElementById('swdCharts').innerHTML=imus.map(chart).join('');
+ document.querySelector('#triggerTable tbody').innerHTML=imus.map(i=>`<tr><td>${i.id}</td><td>${i.current} mm</td><td>${i.trigger} mm</td><td>${i.target} mm</td><td class="${needsIrr(i)?'bad':'ok'}">${needsIrr(i)?'Irrigation triggered':'No irrigation yet'}</td></tr>`).join('');
+ document.getElementById('needCards').innerHTML=imus.map(i=>`<div class="card"><h4>${i.id}</h4><div class="big">${needsIrr(i)?need(i):0} mm</div><div class="small">${i.current} current SWD − ${i.target} target SWD</div></div>`).join('');
+ let b=baseSchedule(); document.getElementById('baseTimeline').innerHTML=timeline(b); document.getElementById('baseConflict').innerHTML=conflictText(b); let rb=resolve(b); document.getElementById('shiftedBase').innerHTML=timeline(rb);
+ let H=val('horizon'); document.querySelector('#forecastTable tbody').innerHTML=forecast.slice(0,H).map((f,k)=>`<tr><td>Day ${k+1}</td><td>${f.rain} mm</td><td>${f.p}%</td><td class="${useful(f)?'ok':'warn'}">${useful(f)?'Yes':'No'}</td></tr>`).join('');
+ document.getElementById('ruleText').innerHTML=`Rain ≥ ${val('rth')} mm <span style="color:#718096">AND</span> probability ≥ ${val('pth')}%`;
+ let fs=forecastSchedule(); document.getElementById('forecastDecisionCards').innerHTML=imus.map(i=>{let x=fs.find(s=>s.id===i.id); return `<div class="card"><h4>${i.id}</h4>${x?`<div class="big">Day ${x.day}: ${x.amount} mm</div><div class="small">${x.reason}</div>`:`<div class="big">No irrigation</div><div class="small">Forecast rain covers the demo requirement</div>`}</div>`}).join('');
+ let rainDays=forecast.slice(0,H).map((f,k)=>useful(f)?k+1:null).filter(Boolean); document.getElementById('forecastTimeline').innerHTML=timeline(fs,rainDays); document.getElementById('forecastConflict').innerHTML=conflictText(fs); let rf=resolve(fs); document.getElementById('finalTimeline').innerHTML=timeline(rf,rainDays);
+ const sum=a=>a.reduce((t,x)=>t+x.amount,0); document.getElementById('summaryBase').innerHTML=`<div class="big">${sum(rb)} mm scheduled</div><p>${rb.length} irrigation events across ${Math.max(...rb.map(x=>x.day))||0} day(s).</p>`; document.getElementById('summaryForecast').innerHTML=`<div class="big">${sum(rf)} mm scheduled</div><p>${rf.length} irrigation events after considering useful forecast rainfall and farm constraints.</p>`;
+ document.querySelector('#compareTable tbody').innerHTML=imus.map(i=>{let x=rb.find(s=>s.id===i.id),y=rf.find(s=>s.id===i.id); let a=x?`Day ${x.day}, ${x.amount} mm`:'None',c=y?`Day ${y.day}, ${y.amount} mm`:'None'; let why=a===c?'No change':'Forecast / capacity changed timing or amount'; return `<tr><td>${i.id}</td><td>${a}</td><td>${c}</td><td class="left">${why}</td></tr>`}).join('');
+}
+document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',render)); render();
+</script>
+</body></html>
